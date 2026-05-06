@@ -23,3 +23,6 @@
 - Added repository-local skills and reference documents for the animal GS baseline and the OpenAI-compatible model gateway.
 - Added the first model-layer schema, OpenAI-compatible client primitives, and task-understanding pipeline with fallback parsing.
 - Verified the current nine-test unit suite after the model integration groundwork.
+- Added environment-variable based model configuration for OpenAI-compatible providers.
+- Added a first `POST /agent/parse-task` route so task understanding can be exercised through the API before real provider credentials are wired in.
+- Verified the current eleven-test unit suite after exposing the parsing route.

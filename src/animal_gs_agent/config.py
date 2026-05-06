@@ -1,5 +1,7 @@
 """Application configuration."""
 
+import os
+
 from pydantic import BaseModel
 
 
@@ -17,4 +19,11 @@ class Settings(BaseModel):
 
 
 def get_settings() -> Settings:
-    return Settings()
+    return Settings(
+        llm=LLMSettings(
+            base_url=os.getenv("ANIMAL_GS_AGENT_LLM_BASE_URL"),
+            api_key=os.getenv("ANIMAL_GS_AGENT_LLM_API_KEY"),
+            model=os.getenv("ANIMAL_GS_AGENT_LLM_MODEL"),
+            timeout_seconds=float(os.getenv("ANIMAL_GS_AGENT_LLM_TIMEOUT_SECONDS", "30")),
+        )
+    )
