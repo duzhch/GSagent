@@ -15,3 +15,4 @@
 - Added the first FastAPI service skeleton and verified the `/health` endpoint with a passing unit test.
 - Installed the initial Python dependencies into the `llm_gblup` conda environment.
 - Added the first agent intake contract for supported genomic selection requests and verified it with a passing unit test.
+- Added a standalone development strategy document to preserve the current and future engineering direction.
