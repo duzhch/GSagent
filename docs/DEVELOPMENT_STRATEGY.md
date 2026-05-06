@@ -90,11 +90,12 @@ The current implementation order is:
 2. FastAPI service skeleton
 3. LangGraph intake skeleton
 4. job submission contract
-5. worker contract
-6. packaging scaffold
-7. fixed workflow integration
-8. result explanation layer
-9. front-end demo
+5. task-understanding model gateway
+6. worker contract
+7. packaging scaffold
+8. fixed workflow integration
+9. result explanation layer
+10. front-end demo
 
 This order is intentional.
 
@@ -106,6 +107,7 @@ In the MVP, the agent is responsible for:
 
 - understanding whether the user request is inside supported scope
 - identifying the requested trait
+- extracting user goal and candidate fixed effects from natural language
 - checking whether required data inputs are present
 - checking whether the dataset is structurally usable
 - routing the request into the fixed workflow
@@ -122,6 +124,20 @@ In the MVP, the agent will not:
 - act as a full autonomous research scientist
 
 This boundary is deliberate and should be preserved unless later requirements change.
+
+## Model Integration Strategy
+
+The repository should use an `OpenAI-compatible` gateway for the first model-backed task understanding stage.
+
+This means:
+
+- one provider abstraction
+- provider selection through configuration
+- support for both OpenAI and DeepSeek style endpoints
+- strict structured output validation
+- bounded fallback to rule parsing
+
+The model should first be used for task understanding, not for statistical execution.
 
 ## Fixed Workflow Roadmap
 
@@ -213,10 +229,11 @@ This means later upgrades should not only change code. They should also update t
 
 The next coding steps are:
 
-1. add the `/jobs` submission contract
-2. add job schemas and a minimal job service
-3. add a traceable background-execution placeholder
-4. add packaging scaffold files
+1. add an OpenAI-compatible model gateway
+2. add structured task-understanding schemas
+3. connect the gateway to the LangGraph intake path
+4. add a traceable background-execution placeholder
+5. add packaging scaffold files
 
 ## Long-Term Direction
 
@@ -233,4 +250,3 @@ without changing the core idea:
 - constrained agent
 - reproducible workflow
 - explainable breeding output
-

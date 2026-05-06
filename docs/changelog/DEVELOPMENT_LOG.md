@@ -20,3 +20,6 @@
 - Verified that the current unit test set passes in the `llm_gblup` environment.
 - Added a minimal in-memory job registry so submitted jobs can be queried by `job_id`.
 - Verified the current four-test unit suite after adding job status lookup.
+- Added repository-local skills and reference documents for the animal GS baseline and the OpenAI-compatible model gateway.
+- Added the first model-layer schema, OpenAI-compatible client primitives, and task-understanding pipeline with fallback parsing.
+- Verified the current nine-test unit suite after the model integration groundwork.
