@@ -13,3 +13,5 @@
   - record major architecture decisions as ADRs
 - Configured the repository to use the `llm_gblup` conda environment for development.
 - Added the first FastAPI service skeleton and verified the `/health` endpoint with a passing unit test.
+- Installed the initial Python dependencies into the `llm_gblup` conda environment.
+- Added the first agent intake contract for supported genomic selection requests and verified it with a passing unit test.
