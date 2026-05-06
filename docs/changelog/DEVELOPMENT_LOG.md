@@ -18,3 +18,5 @@
 - Added a standalone development strategy document to preserve the current and future engineering direction.
 - Added the first `/jobs` submission contract with typed request and response schemas.
 - Verified that the current unit test set passes in the `llm_gblup` environment.
+- Added a minimal in-memory job registry so submitted jobs can be queried by `job_id`.
+- Verified the current four-test unit suite after adding job status lookup.

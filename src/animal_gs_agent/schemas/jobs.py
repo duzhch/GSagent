@@ -15,3 +15,8 @@ class JobSubmissionResponse(BaseModel):
     status: str
     trait_name: str
 
+
+class JobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    trait_name: str
