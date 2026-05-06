@@ -16,3 +16,5 @@
 - Installed the initial Python dependencies into the `llm_gblup` conda environment.
 - Added the first agent intake contract for supported genomic selection requests and verified it with a passing unit test.
 - Added a standalone development strategy document to preserve the current and future engineering direction.
+- Added the first `/jobs` submission contract with typed request and response schemas.
+- Verified that the current unit test set passes in the `llm_gblup` environment.
