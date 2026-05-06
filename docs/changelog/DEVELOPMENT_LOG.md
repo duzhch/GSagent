@@ -11,4 +11,5 @@
   - use git commits for each meaningful change
   - keep a human-readable development log
   - record major architecture decisions as ADRs
-
+- Configured the repository to use the `llm_gblup` conda environment for development.
+- Added the first FastAPI service skeleton and verified the `/health` endpoint with a passing unit test.
