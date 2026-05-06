@@ -1,14 +1,15 @@
 """Agent-facing routes."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
-from animal_gs_agent.agent.task_understanding import understand_task
+from animal_gs_agent.agent.task_understanding import (
+    TaskUnderstandingProviderError,
+    TaskUnderstandingValidationError,
+    understand_task,
+)
+from animal_gs_agent.config import get_settings
+from animal_gs_agent.llm.client import OpenAICompatibleLLMClient
 from animal_gs_agent.schemas.agent import ParseTaskRequest
-
-
-class _NoopLLMClient:
-    def request_json(self, system_prompt: str, user_prompt: str) -> dict:
-        raise RuntimeError("LLM client not configured for route-level inference")
 
 
 def create_agent_router() -> APIRouter:
@@ -16,8 +17,15 @@ def create_agent_router() -> APIRouter:
 
     @router.post("/agent/parse-task")
     def parse_task(payload: ParseTaskRequest) -> dict:
-        result = understand_task(payload.user_message, llm_client=_NoopLLMClient())
+        settings = get_settings()
+        if not settings.llm.base_url or not settings.llm.api_key or not settings.llm.model:
+            raise HTTPException(status_code=503, detail="LLM provider is not configured")
+
+        client = OpenAICompatibleLLMClient(settings.llm)
+        try:
+            result = understand_task(payload.user_message, llm_client=client)
+        except (TaskUnderstandingProviderError, TaskUnderstandingValidationError) as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
         return result.model_dump()
 
     return router
-

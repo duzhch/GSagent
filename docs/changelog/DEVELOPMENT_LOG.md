@@ -26,3 +26,9 @@
 - Added environment-variable based model configuration for OpenAI-compatible providers.
 - Added a first `POST /agent/parse-task` route so task understanding can be exercised through the API before real provider credentials are wired in.
 - Verified the current eleven-test unit suite after exposing the parsing route.
+- Removed fallback behavior for task understanding; the agent now returns explicit API errors when the provider is missing, fails, or returns invalid structured output.
+- Verified the current thirteen-test unit suite after switching task understanding to provider-required behavior.
+- Tightened the OpenAI-compatible payload to request JSON-mode responses.
+- Added payload normalization for near-miss provider field names so real DeepSeek responses can be mapped into the repository schema.
+- Verified a real DeepSeek smoke test for task parsing with the current `OpenAICompatibleLLMClient` path.
+- Verified the current fourteen-test unit suite after the real-provider compatibility changes.

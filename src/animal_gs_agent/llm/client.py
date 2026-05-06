@@ -15,6 +15,7 @@ class OpenAICompatibleLLMClient:
     def build_chat_payload(self, system_prompt: str, user_prompt: str) -> dict:
         return {
             "model": self.settings.model,
+            "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

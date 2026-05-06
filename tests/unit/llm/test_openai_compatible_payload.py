@@ -19,6 +19,7 @@ def test_openai_compatible_client_builds_chat_payload() -> None:
     )
 
     assert payload["model"] == "test-model"
+    assert payload["response_format"] == {"type": "json_object"}
     assert payload["messages"][0]["role"] == "system"
     assert payload["messages"][1]["role"] == "user"
 

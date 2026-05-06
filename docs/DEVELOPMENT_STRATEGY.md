@@ -235,6 +235,17 @@ The next coding steps are:
 4. add a traceable background-execution placeholder
 5. add packaging scaffold files
 
+## Current Stage Completion
+
+The repository has now completed the first-stage model gateway foundation:
+
+- OpenAI-compatible provider configuration is wired through environment variables
+- the task-understanding route is exposed through the API
+- provider absence now returns explicit API errors instead of silent fallback
+- real DeepSeek task-understanding calls have been smoke-tested against the current gateway path
+
+The next stage should focus on connecting task-understanding outputs to richer job orchestration and data profiling.
+
 ## Long-Term Direction
 
 The long-term goal is to evolve this repository from:
