@@ -131,3 +131,17 @@
   - added `workflow_submission_id` field in job response schema
 - Updated native packaging docs and env templates with Slurm policy fields.
 - Verified full unit suite in `llm_gblup` environment with `32 passed`.
+
+### Session 6
+
+- Added Slurm status polling integration in `GET /jobs/{id}`:
+  - if job is `running` with `slurm_nextflow_submit`, API now refreshes state using queue polling
+  - auto transitions from running to completed/failed based on Slurm terminal states
+  - completed refresh now parses workflow outputs and writes `workflow_summary`
+- Added new service module for Slurm state polling:
+  - `src/animal_gs_agent/services/slurm_service.py`
+  - `sacct` first, `squeue` fallback, normalized states
+- Added `workflow_queue_state` to job schemas for explicit queue visibility.
+- Added overall roadmap document:
+  - `docs/delivery/OVERALL_PLAN.md`
+- Verified full unit suite in `llm_gblup` environment with `35 passed`.

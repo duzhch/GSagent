@@ -59,6 +59,94 @@ def get_job(job_id: str) -> JobStatusResponse | None:
     return jobs_store.get(job_id)
 
 
+def refresh_running_job(
+    job_id: str,
+    slurm_state_checker=None,
+    workflow_output_parser=None,
+) -> JobStatusResponse | None:
+    job = jobs_store.get(job_id)
+    if job is None:
+        return None
+    if job.status != "running":
+        return job
+    if job.workflow_backend != "slurm_nextflow_submit":
+        return job
+    if not job.workflow_submission_id:
+        return job
+    if slurm_state_checker is None:
+        return job
+
+    queue_state = slurm_state_checker(job.workflow_submission_id)
+    if queue_state in {"PENDING", "RUNNING", "UNKNOWN"}:
+        updated = job.model_copy(
+            update={
+                "workflow_queue_state": queue_state,
+            }
+        )
+        jobs_store[job_id] = updated
+        return updated
+
+    if queue_state == "COMPLETED":
+        workflow_summary = None
+        if workflow_output_parser is not None and job.workflow_result_dir:
+            try:
+                workflow_summary = workflow_output_parser(
+                    result_dir=job.workflow_result_dir,
+                    trait_name=job.trait_name,
+                )
+            except Exception:
+                failed = job.model_copy(
+                    update={
+                        "status": "failed",
+                        "workflow_queue_state": queue_state,
+                        "execution_error": "workflow_output_parse_error",
+                        "execution_error_detail": "failed to parse fixed workflow outputs",
+                        "events": _append_event(
+                            job,
+                            phase="failed",
+                            message="workflow output parsing failed after slurm completion",
+                            error_code="workflow_output_parse_error",
+                        ),
+                    }
+                )
+                jobs_store[job_id] = failed
+                return failed
+
+        completed = job.model_copy(
+            update={
+                "status": "completed",
+                "workflow_queue_state": queue_state,
+                "execution_error": None,
+                "execution_error_detail": None,
+                "workflow_summary": workflow_summary,
+                "events": _append_event(
+                    job,
+                    phase="completed",
+                    message=f"slurm workflow finished ({queue_state})",
+                ),
+            }
+        )
+        jobs_store[job_id] = completed
+        return completed
+
+    failed = job.model_copy(
+        update={
+            "status": "failed",
+            "workflow_queue_state": queue_state,
+            "execution_error": "workflow_slurm_failed",
+            "execution_error_detail": f"slurm job state: {queue_state}",
+            "events": _append_event(
+                job,
+                phase="failed",
+                message=f"slurm workflow failed ({queue_state})",
+                error_code="workflow_slurm_failed",
+            ),
+        }
+    )
+    jobs_store[job_id] = failed
+    return failed
+
+
 def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) -> JobStatusResponse | None:
     job = jobs_store.get(job_id)
     if job is None:
@@ -121,6 +209,7 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                     "workflow_backend": execution_result.backend,
                     "workflow_result_dir": execution_result.result_dir,
                     "workflow_submission_id": execution_result.submission_id,
+                    "workflow_queue_state": "PENDING",
                     "events": _append_event(
                         running_job,
                         phase="running",

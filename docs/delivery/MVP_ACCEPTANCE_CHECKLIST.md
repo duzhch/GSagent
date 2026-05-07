@@ -11,8 +11,10 @@ Use this list for supervisor/company demo sign-off.
 ## B. Workflow Layer
 
 - [ ] `/jobs/{id}/run` triggers fixed native Nextflow workflow.
+- [ ] login-node requests are routed to Slurm submission when policy is `auto`/`slurm`.
 - [ ] Workflow failures return stable error codes and detail messages.
 - [ ] Successful runs persist `workflow_backend` and `workflow_result_dir`.
+- [ ] `/jobs/{id}` refreshes Slurm-submitted jobs to terminal states automatically.
 
 ## C. Output and Explainability
 

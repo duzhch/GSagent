@@ -59,6 +59,7 @@ class JobSubmissionResponse(BaseModel):
     workflow_backend: str | None = None
     workflow_result_dir: str | None = None
     workflow_submission_id: str | None = None
+    workflow_queue_state: str | None = None
     workflow_summary: WorkflowSummary | None = None
     events: list[JobEvent] = Field(default_factory=list)
 
@@ -74,6 +75,7 @@ class JobStatusResponse(BaseModel):
     workflow_backend: str | None = None
     workflow_result_dir: str | None = None
     workflow_submission_id: str | None = None
+    workflow_queue_state: str | None = None
     workflow_summary: WorkflowSummary | None = None
     events: list[JobEvent] = Field(default_factory=list)
 

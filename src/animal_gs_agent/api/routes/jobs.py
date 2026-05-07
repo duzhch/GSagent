@@ -18,8 +18,9 @@ from animal_gs_agent.schemas.jobs import (
 )
 from animal_gs_agent.services.artifact_service import list_artifacts
 from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
-from animal_gs_agent.services.job_service import create_job, get_job, run_job
+from animal_gs_agent.services.job_service import create_job, get_job, refresh_running_job, run_job
 from animal_gs_agent.services.report_service import build_job_report
+from animal_gs_agent.services.slurm_service import poll_slurm_job_state
 from animal_gs_agent.services.workflow_result_service import parse_workflow_outputs
 from animal_gs_agent.services.workflow_service import execute_fixed_workflow
 
@@ -53,7 +54,11 @@ def create_jobs_router() -> APIRouter:
 
     @router.get("/jobs/{job_id}", response_model=JobStatusResponse, response_model_exclude_none=True)
     def get_job_status(job_id: str) -> JobStatusResponse:
-        job = get_job(job_id)
+        job = refresh_running_job(
+            job_id,
+            slurm_state_checker=poll_slurm_job_state,
+            workflow_output_parser=parse_workflow_outputs,
+        )
         if job is None:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
         return job
