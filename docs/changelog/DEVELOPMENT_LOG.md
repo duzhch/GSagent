@@ -89,3 +89,32 @@
   - workflow output parsing service
   - report endpoint success and unfinished-job behavior
 - Verified full unit suite in `llm_gblup` environment with `25 passed`.
+
+### Session 4
+
+- Implemented delivery-step completion around production-style demo requirements:
+  - added `/jobs/{job_id}/artifacts` endpoint for reproducible output manifests
+  - added structured execution timeline events in job state (`queued/running/completed/failed`)
+  - added error detail surface (`execution_error_detail`) in addition to stable error codes
+- Extended workflow output parsing:
+  - added optional `accuracy_metrics.rds` extraction via `Rscript + jsonlite` when available
+  - merged extracted metrics into `workflow_summary.model_metrics`
+- Added native packaging bundle for non-Docker cluster deployment:
+  - `packaging/native/environment.yml`
+  - `packaging/native/.env.example`
+  - `packaging/native/README.md`
+  - `scripts/native/preflight.sh`
+  - `scripts/native/start_api.sh`
+  - `scripts/native/demo_run.sh`
+- Added real-data support scripts:
+  - `scripts/native/prepare_pig_trait_csv.py`
+  - `scripts/native/real_data_contract_check.py`
+- Added delivery documentation set:
+  - `docs/delivery/REAL_DATA_RUNBOOK.md`
+  - `docs/delivery/DEMO_10MIN_SCRIPT.md`
+  - `docs/delivery/MVP_ACCEPTANCE_CHECKLIST.md`
+- Added a delivery layout smoke test to protect required handoff artifacts.
+- Performed one real pig-data contract integration check:
+  - converted `data/pig5/BF.txt` to `data/pig5/BF_phenotype.csv`
+  - contract check passed against `data/pig5/2548bir.bed` with zero validation flags
+- Verified full unit suite in `llm_gblup` environment with `29 passed`.

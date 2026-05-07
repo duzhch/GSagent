@@ -74,8 +74,11 @@ def test_run_job_transitions_to_completed_for_valid_dataset(monkeypatch, tmp_pat
     run_response = client.post(f"/jobs/{job_id}/run")
 
     assert run_response.status_code == 200
-    assert run_response.json()["status"] == "completed"
-    assert run_response.json()["workflow_backend"] == "native_nextflow"
+    body = run_response.json()
+    assert body["status"] == "completed"
+    assert body["workflow_backend"] == "native_nextflow"
+    phases = [item["phase"] for item in body["events"]]
+    assert phases == ["queued", "running", "completed"]
 
 
 def test_run_job_transitions_to_failed_when_trait_missing(monkeypatch, tmp_path) -> None:
@@ -106,6 +109,8 @@ def test_run_job_transitions_to_failed_when_trait_missing(monkeypatch, tmp_path)
     assert run_response.status_code == 200
     assert body["status"] == "failed"
     assert body["execution_error"] == "trait_column_missing"
+    assert body["events"][-1]["phase"] == "failed"
+    assert body["events"][-1]["error_code"] == "trait_column_missing"
 
 
 def test_run_job_transitions_to_failed_when_workflow_runtime_errors(monkeypatch, tmp_path) -> None:
@@ -146,3 +151,4 @@ def test_run_job_transitions_to_failed_when_workflow_runtime_errors(monkeypatch,
     assert run_response.status_code == 200
     assert body["status"] == "failed"
     assert body["execution_error"] == "workflow_runtime_error"
+    assert body["execution_error_detail"] == "nextflow failed with exit code 1"

@@ -60,3 +60,21 @@ Current MVP includes:
 - dataset profiling with phenotype header checks and trait-column validation
 - runnable job endpoint (`/jobs/{job_id}/run`) that dispatches the fixed native Nextflow workflow, parses output artifacts, and persists structured workflow summaries
 - report endpoint (`/jobs/{job_id}/report`) that returns agent-facing explanations with top GEBV candidates
+- artifacts endpoint (`/jobs/{job_id}/artifacts`) that returns reproducible output file manifests
+- structured execution diagnostics (`execution_error`, `execution_error_detail`) and timeline events (`events`)
+
+## Native Packaging
+
+For clusters without Docker privileges, use the native delivery bundle:
+
+- `packaging/native/environment.yml`
+- `packaging/native/.env.example`
+- `scripts/native/preflight.sh`
+- `scripts/native/start_api.sh`
+- `scripts/native/demo_run.sh`
+
+Runbooks:
+
+- `docs/delivery/REAL_DATA_RUNBOOK.md`
+- `docs/delivery/DEMO_10MIN_SCRIPT.md`
+- `docs/delivery/MVP_ACCEPTANCE_CHECKLIST.md`

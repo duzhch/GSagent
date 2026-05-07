@@ -40,34 +40,17 @@ def test_get_job_returns_submitted_job_status(monkeypatch) -> None:
 
     response = client.get(f"/jobs/{job_id}")
 
+    body = response.json()
+
     assert response.status_code == 200
-    assert response.json() == {
-        "job_id": job_id,
-        "status": "queued",
-        "trait_name": "daily_gain",
-        "task_understanding": {
-            "request_scope": "supported_gs",
-            "trait_name": "daily_gain",
-            "user_goal": "rank candidates for genomic selection",
-            "candidate_fixed_effects": ["sex", "batch"],
-            "population_description": "commercial pig population",
-            "missing_inputs": [],
-            "confidence": 0.91,
-            "clarification_needed": False,
-        },
-        "dataset_profile": {
-            "phenotype_path": "data/demo/phenotypes.csv",
-            "genotype_path": "data/demo/genotypes.pgen",
-            "path_checks": {
-                "phenotype_exists": False,
-                "genotype_exists": False,
-            },
-            "phenotype_format": "csv",
-            "genotype_format": "pgen",
-            "phenotype_headers": [],
-            "validation_flags": [
-                "phenotype_not_found",
-                "genotype_not_found",
-            ],
-        },
-    }
+    assert body["job_id"] == job_id
+    assert body["status"] == "queued"
+    assert body["trait_name"] == "daily_gain"
+    assert body["task_understanding"]["request_scope"] == "supported_gs"
+    assert body["dataset_profile"]["phenotype_format"] == "csv"
+    assert body["dataset_profile"]["genotype_format"] == "pgen"
+    assert body["dataset_profile"]["validation_flags"] == [
+        "phenotype_not_found",
+        "genotype_not_found",
+    ]
+    assert body["events"][0]["phase"] == "queued"

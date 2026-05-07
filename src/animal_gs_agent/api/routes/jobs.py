@@ -10,11 +10,13 @@ from animal_gs_agent.agent.task_understanding import (
 from animal_gs_agent.config import get_settings
 from animal_gs_agent.llm.client import OpenAICompatibleLLMClient
 from animal_gs_agent.schemas.jobs import (
+    JobArtifactsResponse,
     JobReportResponse,
     JobStatusResponse,
     JobSubmissionRequest,
     JobSubmissionResponse,
 )
+from animal_gs_agent.services.artifact_service import list_artifacts
 from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
 from animal_gs_agent.services.job_service import create_job, get_job, run_job
 from animal_gs_agent.services.report_service import build_job_report
@@ -78,5 +80,25 @@ def create_jobs_router() -> APIRouter:
             return build_job_report(job)
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @router.get("/jobs/{job_id}/artifacts", response_model=JobArtifactsResponse)
+    def get_job_artifacts(job_id: str) -> JobArtifactsResponse:
+        job = get_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        if job.status != "completed":
+            raise HTTPException(status_code=409, detail=f"Job {job_id} is not completed")
+        if not job.workflow_result_dir:
+            raise HTTPException(status_code=409, detail=f"Job {job_id} has no workflow result directory")
+        try:
+            artifacts = list_artifacts(job.workflow_result_dir)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return JobArtifactsResponse(
+            job_id=job_id,
+            status=job.status,
+            artifact_count=len(artifacts),
+            artifacts=artifacts,
+        )
 
     return router

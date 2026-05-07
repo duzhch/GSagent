@@ -29,6 +29,25 @@ class WorkflowSummary(BaseModel):
     source_files: list[str] = Field(default_factory=list)
 
 
+class JobEvent(BaseModel):
+    phase: Literal["queued", "running", "completed", "failed"]
+    timestamp: str
+    message: str
+    error_code: str | None = None
+
+
+class JobArtifact(BaseModel):
+    relative_path: str
+    size_bytes: int
+
+
+class JobArtifactsResponse(BaseModel):
+    job_id: str
+    status: str
+    artifact_count: int
+    artifacts: list[JobArtifact] = Field(default_factory=list)
+
+
 class JobSubmissionResponse(BaseModel):
     job_id: str
     status: Literal["queued", "running", "completed", "failed"]
@@ -36,9 +55,11 @@ class JobSubmissionResponse(BaseModel):
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
     execution_error: str | None = None
+    execution_error_detail: str | None = None
     workflow_backend: str | None = None
     workflow_result_dir: str | None = None
     workflow_summary: WorkflowSummary | None = None
+    events: list[JobEvent] = Field(default_factory=list)
 
 
 class JobStatusResponse(BaseModel):
@@ -48,9 +69,11 @@ class JobStatusResponse(BaseModel):
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
     execution_error: str | None = None
+    execution_error_detail: str | None = None
     workflow_backend: str | None = None
     workflow_result_dir: str | None = None
     workflow_summary: WorkflowSummary | None = None
+    events: list[JobEvent] = Field(default_factory=list)
 
 
 class JobReportResponse(BaseModel):
