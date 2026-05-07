@@ -40,8 +40,12 @@ def test_submit_job_returns_pending_job(monkeypatch) -> None:
     body = response.json()
 
     assert response.status_code == 202
-    assert body["status"] == "pending"
+    assert body["status"] == "queued"
     assert body["trait_name"] == "daily_gain"
     assert body["task_understanding"]["request_scope"] == "supported_gs"
     assert body["task_understanding"]["candidate_fixed_effects"] == ["sex", "batch"]
+    assert body["dataset_profile"]["phenotype_path"] == "data/demo/phenotypes.csv"
+    assert body["dataset_profile"]["genotype_path"] == "data/demo/genotypes.pgen"
+    assert body["dataset_profile"]["path_checks"]["phenotype_exists"] is False
+    assert body["dataset_profile"]["path_checks"]["genotype_exists"] is False
     assert "job_id" in body

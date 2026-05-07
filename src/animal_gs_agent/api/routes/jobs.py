@@ -14,6 +14,7 @@ from animal_gs_agent.schemas.jobs import (
     JobSubmissionRequest,
     JobSubmissionResponse,
 )
+from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
 from animal_gs_agent.services.job_service import create_job, get_job
 
 
@@ -32,7 +33,12 @@ def create_jobs_router() -> APIRouter:
         except (TaskUnderstandingProviderError, TaskUnderstandingValidationError) as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-        return create_job(payload, task_understanding=task_understanding)
+        dataset_profile = build_dataset_profile(payload)
+        return create_job(
+            payload,
+            task_understanding=task_understanding,
+            dataset_profile=dataset_profile,
+        )
 
     @router.get("/jobs/{job_id}", response_model=JobStatusResponse)
     def get_job_status(job_id: str) -> JobStatusResponse:

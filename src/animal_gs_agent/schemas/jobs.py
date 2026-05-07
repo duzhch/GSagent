@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel
 
+from animal_gs_agent.schemas.dataset_profile import DatasetProfile
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
 
 
@@ -17,6 +18,7 @@ class JobSubmissionResponse(BaseModel):
     status: str
     trait_name: str
     task_understanding: TaskUnderstandingResult
+    dataset_profile: DatasetProfile
 
 
 class JobStatusResponse(BaseModel):
@@ -24,3 +26,4 @@ class JobStatusResponse(BaseModel):
     status: str
     trait_name: str
     task_understanding: TaskUnderstandingResult
+    dataset_profile: DatasetProfile

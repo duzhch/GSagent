@@ -43,7 +43,7 @@ def test_get_job_returns_submitted_job_status(monkeypatch) -> None:
     assert response.status_code == 200
     assert response.json() == {
         "job_id": job_id,
-        "status": "pending",
+        "status": "queued",
         "trait_name": "daily_gain",
         "task_understanding": {
             "request_scope": "supported_gs",
@@ -54,5 +54,13 @@ def test_get_job_returns_submitted_job_status(monkeypatch) -> None:
             "missing_inputs": [],
             "confidence": 0.91,
             "clarification_needed": False,
+        },
+        "dataset_profile": {
+            "phenotype_path": "data/demo/phenotypes.csv",
+            "genotype_path": "data/demo/genotypes.pgen",
+            "path_checks": {
+                "phenotype_exists": False,
+                "genotype_exists": False,
+            },
         },
     }

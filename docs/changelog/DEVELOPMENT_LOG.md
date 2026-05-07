@@ -34,3 +34,5 @@
 - Verified the current fourteen-test unit suite after the real-provider compatibility changes.
 - Integrated task-understanding results into `/jobs` submission and job status records.
 - The job API now stores and returns structured task-understanding output together with the job metadata.
+- Added a first dataset profiling layer to job submission, currently focused on path-level existence checks for genotype and phenotype inputs.
+- Changed the initial job lifecycle state from `pending` to `queued` to better reflect pre-execution workflow staging.
