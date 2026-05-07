@@ -22,6 +22,8 @@ class JobSubmissionResponse(BaseModel):
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
     execution_error: str | None = None
+    workflow_backend: str | None = None
+    workflow_result_dir: str | None = None
 
 
 class JobStatusResponse(BaseModel):
@@ -31,3 +33,5 @@ class JobStatusResponse(BaseModel):
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
     execution_error: str | None = None
+    workflow_backend: str | None = None
+    workflow_result_dir: str | None = None

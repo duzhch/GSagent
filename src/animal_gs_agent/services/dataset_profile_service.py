@@ -6,7 +6,7 @@ from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetPr
 from animal_gs_agent.schemas.jobs import JobSubmissionRequest
 
 SUPPORTED_PHENOTYPE_FORMATS = {"csv", "tsv", "txt"}
-SUPPORTED_GENOTYPE_FORMATS = {"pgen", "bed"}
+SUPPORTED_GENOTYPE_FORMATS = {"pgen", "bed", "vcf"}
 
 
 def _infer_format(path: str) -> str | None:

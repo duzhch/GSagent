@@ -53,5 +53,9 @@ Every meaningful change should be tracked by:
 
 ## Status
 
-Project initialization and architecture planning in progress.
+Current MVP includes:
 
+- model-backed task understanding (`/agent/parse-task`)
+- job submission and status APIs (`/jobs`, `/jobs/{job_id}`)
+- dataset profiling with phenotype header checks and trait-column validation
+- runnable job endpoint (`/jobs/{job_id}/run`) that dispatches the fixed native Nextflow workflow and returns execution status

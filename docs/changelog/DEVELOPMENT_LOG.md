@@ -55,3 +55,19 @@
   - dataset profile header/trait detection
   - run endpoint transitions for valid and invalid datasets
 - Verified full unit suite in `llm_gblup` environment with `18 passed`.
+
+### Session 2
+
+- Added a fixed workflow execution service to bridge agent decisions with a real GS pipeline backend:
+  - introduced `workflow_service` with a native Nextflow executor
+  - fixed command assembly for `main.nf` with explicit trait/genotype/phenotype/outdir parameters
+  - standardized workflow errors as typed codes (`workflow_pipeline_missing`, `workflow_input_invalid`, `workflow_runtime_error`)
+- Upgraded `/jobs/{job_id}/run` from validation-only completion to true execution dispatch:
+  - route now calls the fixed workflow executor
+  - `run_job` now supports executor injection and workflow error mapping
+  - successful runs now persist workflow metadata (`workflow_backend`, `workflow_result_dir`)
+- Expanded genotype format support in dataset profiling to include `vcf` so native Nextflow input contracts are accepted.
+- Added and updated tests:
+  - API run tests now validate workflow success and workflow-runtime failure branches
+  - new workflow service tests cover command construction and missing-pipeline failures
+- Verified full unit suite in `llm_gblup` environment with `21 passed`.

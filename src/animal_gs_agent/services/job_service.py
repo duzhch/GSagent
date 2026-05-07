@@ -9,6 +9,7 @@ from animal_gs_agent.schemas.jobs import (
 )
 from animal_gs_agent.schemas.dataset_profile import DatasetProfile
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
+from animal_gs_agent.services.workflow_service import WorkflowExecutionError
 
 jobs_store: dict[str, JobStatusResponse] = {}
 
@@ -33,7 +34,7 @@ def get_job(job_id: str) -> JobStatusResponse | None:
     return jobs_store.get(job_id)
 
 
-def run_job(job_id: str) -> JobStatusResponse | None:
+def run_job(job_id: str, workflow_executor=None) -> JobStatusResponse | None:
     job = jobs_store.get(job_id)
     if job is None:
         return None
@@ -46,6 +47,30 @@ def run_job(job_id: str) -> JobStatusResponse | None:
         failed_job = running_job.model_copy(update={"status": "failed", "execution_error": first_error})
         jobs_store[job_id] = failed_job
         return failed_job
+
+    if workflow_executor is not None:
+        try:
+            execution_result = workflow_executor(running_job)
+        except WorkflowExecutionError as exc:
+            failed_job = running_job.model_copy(
+                update={
+                    "status": "failed",
+                    "execution_error": exc.code,
+                }
+            )
+            jobs_store[job_id] = failed_job
+            return failed_job
+
+        completed_job = running_job.model_copy(
+            update={
+                "status": "completed",
+                "execution_error": None,
+                "workflow_backend": execution_result.backend,
+                "workflow_result_dir": execution_result.result_dir,
+            }
+        )
+        jobs_store[job_id] = completed_job
+        return completed_job
 
     completed_job = running_job.model_copy(update={"status": "completed", "execution_error": None})
     jobs_store[job_id] = completed_job

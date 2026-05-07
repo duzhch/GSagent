@@ -1,0 +1,76 @@
+from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetProfile
+from animal_gs_agent.schemas.jobs import JobStatusResponse
+from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
+from animal_gs_agent.services.workflow_service import (
+    WorkflowExecutionError,
+    build_native_nextflow_command,
+    execute_fixed_workflow,
+)
+
+
+def _build_job(phenotype_path: str, genotype_path: str, trait_name: str = "daily_gain") -> JobStatusResponse:
+    return JobStatusResponse(
+        job_id="job12345",
+        status="queued",
+        trait_name=trait_name,
+        task_understanding=TaskUnderstandingResult(
+            request_scope="supported_gs",
+            trait_name=trait_name,
+            user_goal="rank candidates",
+            candidate_fixed_effects=["sex"],
+            population_description="pig",
+            missing_inputs=[],
+            confidence=0.9,
+            clarification_needed=False,
+        ),
+        dataset_profile=DatasetProfile(
+            phenotype_path=phenotype_path,
+            genotype_path=genotype_path,
+            path_checks=DatasetPathChecks(phenotype_exists=True, genotype_exists=True),
+            phenotype_format="csv",
+            genotype_format="vcf",
+            phenotype_headers=["animal_id", trait_name],
+            trait_column_present=True,
+            validation_flags=[],
+        ),
+    )
+
+
+def test_build_native_nextflow_command_contains_fixed_workflow_args(tmp_path) -> None:
+    pipeline_dir = tmp_path / "pipeline"
+    pipeline_dir.mkdir()
+    out_dir = tmp_path / "runs" / "job12345"
+
+    job = _build_job(
+        phenotype_path=str(tmp_path / "pheno.csv"),
+        genotype_path=str(tmp_path / "geno.vcf"),
+    )
+
+    command = build_native_nextflow_command(job=job, pipeline_dir=pipeline_dir, out_dir=out_dir)
+
+    assert command[:4] == ["nextflow", "run", str(pipeline_dir / "main.nf"), "-profile"]
+    assert "local,native" in command
+    assert "--genotype_vcf" in command
+    assert "--phenotype_csv" in command
+    assert "--trait_name" in command
+    assert "--outdir" in command
+
+
+def test_execute_fixed_workflow_raises_when_pipeline_missing(tmp_path, monkeypatch) -> None:
+    pipeline_dir = tmp_path / "pipeline"
+    pipeline_dir.mkdir()
+
+    job = _build_job(
+        phenotype_path=str(tmp_path / "pheno.csv"),
+        genotype_path=str(tmp_path / "geno.vcf"),
+    )
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR", str(pipeline_dir))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT", str(tmp_path / "runs"))
+
+    try:
+        execute_fixed_workflow(job)
+    except WorkflowExecutionError as exc:
+        assert exc.code == "workflow_pipeline_missing"
+    else:
+        raise AssertionError("expected WorkflowExecutionError")
