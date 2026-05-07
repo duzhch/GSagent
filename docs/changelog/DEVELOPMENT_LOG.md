@@ -145,3 +145,16 @@
 - Added overall roadmap document:
   - `docs/delivery/OVERALL_PLAN.md`
 - Verified full unit suite in `llm_gblup` environment with `35 passed`.
+
+### Session 7
+
+- Added practical hardening updates:
+  - optional persistent job store via `ANIMAL_GS_AGENT_JOB_STORE_PATH`
+  - job state auto-save on lifecycle transitions
+  - job reload from disk when in-memory store is empty
+  - idempotent `run_job` behavior for `running` and `completed` states
+- Added new service tests for practical behavior:
+  - persistence/recovery from disk
+  - idempotent run execution guard
+- Updated overall roadmap progress status in `docs/delivery/OVERALL_PLAN.md`.
+- Verified full unit suite in `llm_gblup` environment with `37 passed`.

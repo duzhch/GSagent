@@ -1,6 +1,9 @@
 """Minimal job service."""
 
 from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
 from uuid import uuid4
 
 from animal_gs_agent.schemas.jobs import (
@@ -32,6 +35,33 @@ def _append_event(job: JobStatusResponse, phase: str, message: str, error_code: 
     ]
 
 
+def _job_store_path() -> Path | None:
+    raw = os.getenv("ANIMAL_GS_AGENT_JOB_STORE_PATH")
+    if raw is None or not raw.strip():
+        return None
+    return Path(raw)
+
+
+def _load_store_if_needed() -> None:
+    if jobs_store:
+        return
+    path = _job_store_path()
+    if path is None or not path.exists():
+        return
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    for job_id, raw in payload.items():
+        jobs_store[job_id] = JobStatusResponse.model_validate(raw)
+
+
+def _persist_store_if_needed() -> None:
+    path = _job_store_path()
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {job_id: job.model_dump() for job_id, job in jobs_store.items()}
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def create_job(
     payload: JobSubmissionRequest,
     task_understanding: TaskUnderstandingResult,
@@ -52,10 +82,12 @@ def create_job(
         ],
     )
     jobs_store[job.job_id] = job
+    _persist_store_if_needed()
     return JobSubmissionResponse(**job.model_dump())
 
 
 def get_job(job_id: str) -> JobStatusResponse | None:
+    _load_store_if_needed()
     return jobs_store.get(job_id)
 
 
@@ -84,6 +116,7 @@ def refresh_running_job(
             }
         )
         jobs_store[job_id] = updated
+        _persist_store_if_needed()
         return updated
 
     if queue_state == "COMPLETED":
@@ -110,6 +143,7 @@ def refresh_running_job(
                     }
                 )
                 jobs_store[job_id] = failed
+                _persist_store_if_needed()
                 return failed
 
         completed = job.model_copy(
@@ -127,6 +161,7 @@ def refresh_running_job(
             }
         )
         jobs_store[job_id] = completed
+        _persist_store_if_needed()
         return completed
 
     failed = job.model_copy(
@@ -144,13 +179,17 @@ def refresh_running_job(
         }
     )
     jobs_store[job_id] = failed
+    _persist_store_if_needed()
     return failed
 
 
 def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) -> JobStatusResponse | None:
+    _load_store_if_needed()
     job = jobs_store.get(job_id)
     if job is None:
         return None
+    if job.status in {"running", "completed"}:
+        return job
 
     running_job = job.model_copy(
         update={
@@ -161,6 +200,7 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
         }
     )
     jobs_store[job_id] = running_job
+    _persist_store_if_needed()
 
     first_error = next(iter(running_job.dataset_profile.validation_flags), None)
     if first_error is not None:
@@ -178,6 +218,7 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
             }
         )
         jobs_store[job_id] = failed_job
+        _persist_store_if_needed()
         return failed_job
 
     if workflow_executor is not None:
@@ -198,6 +239,7 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                 }
             )
             jobs_store[job_id] = failed_job
+            _persist_store_if_needed()
             return failed_job
 
         if execution_result.status == "submitted":
@@ -218,6 +260,7 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                 }
             )
             jobs_store[job_id] = submitted_job
+            _persist_store_if_needed()
             return submitted_job
 
         workflow_summary = None
@@ -242,6 +285,7 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                     }
                 )
                 jobs_store[job_id] = failed_job
+                _persist_store_if_needed()
                 return failed_job
 
         completed_job = running_job.model_copy(
@@ -260,6 +304,7 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
             }
         )
         jobs_store[job_id] = completed_job
+        _persist_store_if_needed()
         return completed_job
 
     completed_job = running_job.model_copy(
@@ -275,4 +320,5 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
         }
     )
     jobs_store[job_id] = completed_job
+    _persist_store_if_needed()
     return completed_job

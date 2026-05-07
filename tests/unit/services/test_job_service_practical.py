@@ -1,0 +1,84 @@
+from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetProfile
+from animal_gs_agent.schemas.jobs import JobSubmissionRequest
+from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
+from animal_gs_agent.services.job_service import create_job, get_job, jobs_store, run_job
+from animal_gs_agent.services.workflow_service import WorkflowExecutionResult
+
+
+def _request() -> JobSubmissionRequest:
+    return JobSubmissionRequest(
+        user_message="Run genomic selection for daily_gain",
+        trait_name="daily_gain",
+        phenotype_path="/tmp/pheno.csv",
+        genotype_path="/tmp/geno.vcf",
+    )
+
+
+def _task() -> TaskUnderstandingResult:
+    return TaskUnderstandingResult(
+        request_scope="supported_gs",
+        trait_name="daily_gain",
+        user_goal="rank candidates",
+        candidate_fixed_effects=["sex"],
+        population_description="pig",
+        missing_inputs=[],
+        confidence=0.9,
+        clarification_needed=False,
+    )
+
+
+def _profile() -> DatasetProfile:
+    return DatasetProfile(
+        phenotype_path="/tmp/pheno.csv",
+        genotype_path="/tmp/geno.vcf",
+        path_checks=DatasetPathChecks(phenotype_exists=True, genotype_exists=True),
+        phenotype_format="csv",
+        genotype_format="vcf",
+        phenotype_headers=["animal_id", "daily_gain"],
+        trait_column_present=True,
+        validation_flags=[],
+    )
+
+
+def test_job_store_persists_and_recovers_from_disk(monkeypatch, tmp_path) -> None:
+    store_file = tmp_path / "jobs_store.json"
+    monkeypatch.setenv("ANIMAL_GS_AGENT_JOB_STORE_PATH", str(store_file))
+    jobs_store.clear()
+
+    created = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+    job_id = created.job_id
+    assert store_file.exists() is True
+
+    jobs_store.clear()
+    recovered = get_job(job_id)
+    assert recovered is not None
+    assert recovered.job_id == job_id
+    assert recovered.trait_name == "daily_gain"
+
+
+def test_run_job_is_idempotent_when_job_already_completed(monkeypatch) -> None:
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_PATH", raising=False)
+    jobs_store.clear()
+
+    created = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+    job_id = created.job_id
+
+    calls = {"n": 0}
+
+    def fake_executor(job):
+        calls["n"] += 1
+        return WorkflowExecutionResult(
+            backend="native_nextflow",
+            command=["nextflow", "run", "main.nf"],
+            result_dir=f"/tmp/{job.job_id}",
+            status="completed",
+        )
+
+    first = run_job(job_id, workflow_executor=fake_executor)
+    second = run_job(job_id, workflow_executor=fake_executor)
+
+    assert first is not None
+    assert second is not None
+    assert first.status == "completed"
+    assert second.status == "completed"
+    assert calls["n"] == 1
