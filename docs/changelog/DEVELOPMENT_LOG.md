@@ -158,3 +158,14 @@
   - idempotent run execution guard
 - Updated overall roadmap progress status in `docs/delivery/OVERALL_PLAN.md`.
 - Verified full unit suite in `llm_gblup` environment with `37 passed`.
+
+### Session 8
+
+- Extended practical persistence backend with SQLite option:
+  - new env `ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH`
+  - auto-create and maintain `jobs` table
+  - load/recover job states from SQLite when in-memory store is empty
+- Kept compatibility with existing JSON-based persistence backend.
+- Added practical unit test coverage for SQLite persistence and recovery.
+- Updated packaging env template and architecture/roadmap docs to include SQLite mode.
+- Verified full unit suite in `llm_gblup` environment with `38 passed`.

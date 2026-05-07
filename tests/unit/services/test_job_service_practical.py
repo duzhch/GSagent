@@ -82,3 +82,20 @@ def test_run_job_is_idempotent_when_job_already_completed(monkeypatch) -> None:
     assert first.status == "completed"
     assert second.status == "completed"
     assert calls["n"] == 1
+
+
+def test_job_store_persists_and_recovers_from_sqlite(monkeypatch, tmp_path) -> None:
+    sqlite_path = tmp_path / "jobs_store.db"
+    monkeypatch.setenv("ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH", str(sqlite_path))
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_PATH", raising=False)
+    jobs_store.clear()
+
+    created = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+    job_id = created.job_id
+    assert sqlite_path.exists() is True
+
+    jobs_store.clear()
+    recovered = get_job(job_id)
+    assert recovered is not None
+    assert recovered.job_id == job_id
+    assert recovered.trait_name == "daily_gain"

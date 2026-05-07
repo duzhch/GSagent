@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import sqlite3
 from uuid import uuid4
 
 from animal_gs_agent.schemas.jobs import (
@@ -42,8 +43,54 @@ def _job_store_path() -> Path | None:
     return Path(raw)
 
 
+def _job_store_sqlite_path() -> Path | None:
+    raw = os.getenv("ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH")
+    if raw is None or not raw.strip():
+        return None
+    return Path(raw)
+
+
+def _sqlite_init(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS jobs (
+                job_id TEXT PRIMARY KEY,
+                payload TEXT NOT NULL
+            )
+            """
+        )
+        conn.commit()
+
+
+def _sqlite_load(path: Path) -> dict[str, JobStatusResponse]:
+    _sqlite_init(path)
+    loaded: dict[str, JobStatusResponse] = {}
+    with sqlite3.connect(path) as conn:
+        rows = conn.execute("SELECT job_id, payload FROM jobs").fetchall()
+    for job_id, payload in rows:
+        loaded[job_id] = JobStatusResponse.model_validate_json(payload)
+    return loaded
+
+
+def _sqlite_persist(path: Path) -> None:
+    _sqlite_init(path)
+    with sqlite3.connect(path) as conn:
+        conn.execute("DELETE FROM jobs")
+        conn.executemany(
+            "INSERT INTO jobs(job_id, payload) VALUES(?, ?)",
+            [(job_id, job.model_dump_json()) for job_id, job in jobs_store.items()],
+        )
+        conn.commit()
+
+
 def _load_store_if_needed() -> None:
     if jobs_store:
+        return
+    sqlite_path = _job_store_sqlite_path()
+    if sqlite_path is not None:
+        jobs_store.update(_sqlite_load(sqlite_path))
         return
     path = _job_store_path()
     if path is None or not path.exists():
@@ -54,6 +101,10 @@ def _load_store_if_needed() -> None:
 
 
 def _persist_store_if_needed() -> None:
+    sqlite_path = _job_store_sqlite_path()
+    if sqlite_path is not None:
+        _sqlite_persist(sqlite_path)
+        return
     path = _job_store_path()
     if path is None:
         return

@@ -23,6 +23,9 @@ Build a Slurm-ready, reproducible genomic-selection agent that:
   - submission mode with persisted `workflow_submission_id`
   - status refresh from Slurm queue on `/jobs/{id}`
 - Optional persistent job store for restart survival (`ANIMAL_GS_AGENT_JOB_STORE_PATH`)
+- Optional persistent job store for restart survival:
+  - JSON path: `ANIMAL_GS_AGENT_JOB_STORE_PATH`
+  - SQLite path: `ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH`
 - Idempotent run behavior for `running/completed` jobs (prevents duplicate execution)
 - Native packaging bundle and delivery docs
 
@@ -81,7 +84,7 @@ Acceptance:
 - Service restarts do not lose job states or reports.
 
 Progress note:
-- MVP-level persistence and idempotent run controls are now implemented.
+- MVP-level persistence (JSON + SQLite) and idempotent run controls are now implemented.
 - Remaining focus in WP-D is persistent database-grade backend and workerization.
 
 ## 4. Milestone Timeline
