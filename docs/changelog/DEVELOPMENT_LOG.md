@@ -32,3 +32,5 @@
 - Added payload normalization for near-miss provider field names so real DeepSeek responses can be mapped into the repository schema.
 - Verified a real DeepSeek smoke test for task parsing with the current `OpenAICompatibleLLMClient` path.
 - Verified the current fourteen-test unit suite after the real-provider compatibility changes.
+- Integrated task-understanding results into `/jobs` submission and job status records.
+- The job API now stores and returns structured task-understanding output together with the job metadata.
