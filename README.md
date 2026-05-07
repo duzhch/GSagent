@@ -58,4 +58,5 @@ Current MVP includes:
 - model-backed task understanding (`/agent/parse-task`)
 - job submission and status APIs (`/jobs`, `/jobs/{job_id}`)
 - dataset profiling with phenotype header checks and trait-column validation
-- runnable job endpoint (`/jobs/{job_id}/run`) that dispatches the fixed native Nextflow workflow and returns execution status
+- runnable job endpoint (`/jobs/{job_id}/run`) that dispatches the fixed native Nextflow workflow, parses output artifacts, and persists structured workflow summaries
+- report endpoint (`/jobs/{job_id}/report`) that returns agent-facing explanations with top GEBV candidates

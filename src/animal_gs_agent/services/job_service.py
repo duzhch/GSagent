@@ -34,7 +34,7 @@ def get_job(job_id: str) -> JobStatusResponse | None:
     return jobs_store.get(job_id)
 
 
-def run_job(job_id: str, workflow_executor=None) -> JobStatusResponse | None:
+def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) -> JobStatusResponse | None:
     job = jobs_store.get(job_id)
     if job is None:
         return None
@@ -61,12 +61,30 @@ def run_job(job_id: str, workflow_executor=None) -> JobStatusResponse | None:
             jobs_store[job_id] = failed_job
             return failed_job
 
+        workflow_summary = None
+        if workflow_output_parser is not None:
+            try:
+                workflow_summary = workflow_output_parser(
+                    result_dir=execution_result.result_dir,
+                    trait_name=running_job.trait_name,
+                )
+            except Exception:
+                failed_job = running_job.model_copy(
+                    update={
+                        "status": "failed",
+                        "execution_error": "workflow_output_parse_error",
+                    }
+                )
+                jobs_store[job_id] = failed_job
+                return failed_job
+
         completed_job = running_job.model_copy(
             update={
                 "status": "completed",
                 "execution_error": None,
                 "workflow_backend": execution_result.backend,
                 "workflow_result_dir": execution_result.result_dir,
+                "workflow_summary": workflow_summary,
             }
         )
         jobs_store[job_id] = completed_job

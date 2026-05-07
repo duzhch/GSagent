@@ -71,3 +71,21 @@
   - API run tests now validate workflow success and workflow-runtime failure branches
   - new workflow service tests cover command construction and missing-pipeline failures
 - Verified full unit suite in `llm_gblup` environment with `21 passed`.
+
+### Session 3
+
+- Added a workflow result parsing node after successful native workflow execution:
+  - parses `gblup/gebv_predictions.csv` for ranked candidate outputs
+  - parses `gblup/model_summary.txt` for key model metrics
+  - writes structured `workflow_summary` back into job state
+- Extended job state schema with:
+  - `workflow_summary` (top candidates, total candidates, model metrics, source files)
+- Added a report-facing API endpoint: `GET /jobs/{job_id}/report`
+  - returns agent-facing explanation text plus top-candidate list
+  - enforces `409` for unfinished jobs to keep state semantics explicit
+- Updated run execution logic:
+  - if workflow output parsing fails, job is marked failed with `workflow_output_parse_error`
+- Added tests for:
+  - workflow output parsing service
+  - report endpoint success and unfinished-job behavior
+- Verified full unit suite in `llm_gblup` environment with `25 passed`.

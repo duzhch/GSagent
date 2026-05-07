@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from animal_gs_agent.api.app import create_app
+from animal_gs_agent.schemas.jobs import RankedCandidate, WorkflowSummary
 from animal_gs_agent.services.workflow_service import WorkflowExecutionError, WorkflowExecutionResult
 
 
@@ -58,6 +59,16 @@ def test_run_job_transitions_to_completed_for_valid_dataset(monkeypatch, tmp_pat
     monkeypatch.setattr(
         "animal_gs_agent.api.routes.jobs.execute_fixed_workflow",
         fake_execute_workflow,
+    )
+    monkeypatch.setattr(
+        "animal_gs_agent.api.routes.jobs.parse_workflow_outputs",
+        lambda result_dir, trait_name, top_n=10: WorkflowSummary(
+            trait_name=trait_name,
+            total_candidates=1,
+            top_candidates=[RankedCandidate(individual_id="A1", gebv=1.2, rank=1)],
+            model_metrics={},
+            source_files=[],
+        ),
     )
 
     run_response = client.post(f"/jobs/{job_id}/run")

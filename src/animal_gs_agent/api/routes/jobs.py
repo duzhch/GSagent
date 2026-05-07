@@ -10,12 +10,15 @@ from animal_gs_agent.agent.task_understanding import (
 from animal_gs_agent.config import get_settings
 from animal_gs_agent.llm.client import OpenAICompatibleLLMClient
 from animal_gs_agent.schemas.jobs import (
+    JobReportResponse,
     JobStatusResponse,
     JobSubmissionRequest,
     JobSubmissionResponse,
 )
 from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
 from animal_gs_agent.services.job_service import create_job, get_job, run_job
+from animal_gs_agent.services.report_service import build_job_report
+from animal_gs_agent.services.workflow_result_service import parse_workflow_outputs
 from animal_gs_agent.services.workflow_service import execute_fixed_workflow
 
 
@@ -55,9 +58,25 @@ def create_jobs_router() -> APIRouter:
 
     @router.post("/jobs/{job_id}/run", response_model=JobStatusResponse, response_model_exclude_none=True)
     def run_submitted_job(job_id: str) -> JobStatusResponse:
-        job = run_job(job_id, workflow_executor=execute_fixed_workflow)
+        job = run_job(
+            job_id,
+            workflow_executor=execute_fixed_workflow,
+            workflow_output_parser=parse_workflow_outputs,
+        )
         if job is None:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
         return job
+
+    @router.get("/jobs/{job_id}/report", response_model=JobReportResponse)
+    def get_job_report(job_id: str) -> JobReportResponse:
+        job = get_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        if job.status != "completed":
+            raise HTTPException(status_code=409, detail=f"Job {job_id} is not completed")
+        try:
+            return build_job_report(job)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     return router
