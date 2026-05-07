@@ -1,3 +1,5 @@
+import sqlite3
+
 from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetProfile
 from animal_gs_agent.schemas.jobs import JobSubmissionRequest
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
@@ -114,3 +116,28 @@ def test_refresh_running_job_loads_store_before_lookup(monkeypatch, tmp_path) ->
     refreshed = refresh_running_job(job_id)
     assert refreshed is not None
     assert refreshed.job_id == job_id
+
+
+def test_get_job_reloads_sqlite_when_in_memory_copy_is_stale(monkeypatch, tmp_path) -> None:
+    sqlite_path = tmp_path / "jobs_store.db"
+    monkeypatch.setenv("ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH", str(sqlite_path))
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_PATH", raising=False)
+    jobs_store.clear()
+
+    created = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+    job_id = created.job_id
+    stale = get_job(job_id)
+    assert stale is not None
+    assert stale.status == "queued"
+
+    external_completed = stale.model_copy(update={"status": "completed"})
+    with sqlite3.connect(sqlite_path) as conn:
+        conn.execute(
+            "UPDATE jobs SET payload = ? WHERE job_id = ?",
+            (external_completed.model_dump_json(), job_id),
+        )
+        conn.commit()
+
+    refreshed = get_job(job_id)
+    assert refreshed is not None
+    assert refreshed.status == "completed"

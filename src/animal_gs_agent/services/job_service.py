@@ -85,6 +85,42 @@ def _sqlite_persist(path: Path) -> None:
         conn.commit()
 
 
+def _sqlite_load_job(path: Path, job_id: str) -> JobStatusResponse | None:
+    _sqlite_init(path)
+    with sqlite3.connect(path) as conn:
+        row = conn.execute("SELECT payload FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+    if row is None:
+        return None
+    return JobStatusResponse.model_validate_json(row[0])
+
+
+def _json_load_job(path: Path, job_id: str) -> JobStatusResponse | None:
+    if not path.exists():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    raw = payload.get(job_id)
+    if raw is None:
+        return None
+    return JobStatusResponse.model_validate(raw)
+
+
+def _reload_job_from_persistence(job_id: str) -> JobStatusResponse | None:
+    sqlite_path = _job_store_sqlite_path()
+    if sqlite_path is not None:
+        job = _sqlite_load_job(sqlite_path, job_id)
+        if job is not None:
+            jobs_store[job_id] = job
+        return job
+
+    json_path = _job_store_path()
+    if json_path is None:
+        return None
+    job = _json_load_job(json_path, job_id)
+    if job is not None:
+        jobs_store[job_id] = job
+    return job
+
+
 def _load_store_if_needed() -> None:
     if jobs_store:
         return
@@ -139,6 +175,9 @@ def create_job(
 
 def get_job(job_id: str) -> JobStatusResponse | None:
     _load_store_if_needed()
+    reloaded = _reload_job_from_persistence(job_id)
+    if reloaded is not None:
+        return reloaded
     return jobs_store.get(job_id)
 
 
@@ -168,6 +207,7 @@ def refresh_running_job(
     workflow_output_parser=None,
 ) -> JobStatusResponse | None:
     _load_store_if_needed()
+    _reload_job_from_persistence(job_id)
     job = jobs_store.get(job_id)
     if job is None:
         return None

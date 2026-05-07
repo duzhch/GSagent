@@ -80,3 +80,13 @@ Runbooks:
 - `docs/delivery/REAL_DATA_RUNBOOK.md`
 - `docs/delivery/DEMO_10MIN_SCRIPT.md`
 - `docs/delivery/MVP_ACCEPTANCE_CHECKLIST.md`
+
+## Offline Release Bundle
+
+To build a zero-download offline package (runtime + app + fixed pipeline + demo data):
+
+```bash
+bash packaging/release/build_offline_bundle.sh
+```
+
+Output archive is written to `dist/animal-gs-agent-offline-<date>-<gitsha>.tar.gz`.

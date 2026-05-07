@@ -62,3 +62,26 @@ def test_build_dataset_profile_accepts_gzipped_vcf(tmp_path) -> None:
 
     assert profile.genotype_format == "vcf"
     assert "genotype_format_unsupported" not in profile.validation_flags
+
+
+def test_build_dataset_profile_accepts_long_format_trait_value_headers(tmp_path) -> None:
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text(
+        "individual_id,trait,value,year\nA1,daily_gain,1.2,2023\n",
+        encoding="utf-8",
+    )
+
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    payload = JobSubmissionRequest(
+        user_message="Run genomic selection for daily_gain",
+        trait_name="daily_gain",
+        phenotype_path=str(phenotype_file),
+        genotype_path=str(genotype_file),
+    )
+
+    profile = build_dataset_profile(payload)
+
+    assert profile.trait_column_present is True
+    assert "trait_column_missing" not in profile.validation_flags

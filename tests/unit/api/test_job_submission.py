@@ -49,3 +49,29 @@ def test_submit_job_returns_pending_job(monkeypatch) -> None:
     assert body["dataset_profile"]["path_checks"]["phenotype_exists"] is False
     assert body["dataset_profile"]["path_checks"]["genotype_exists"] is False
     assert "job_id" in body
+
+
+def test_submit_job_falls_back_to_heuristic_when_llm_not_configured(monkeypatch) -> None:
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_API_KEY", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_MODEL", raising=False)
+
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/jobs",
+        json={
+            "user_message": "Run genomic selection for daily_gain with sex and batch fixed effects",
+            "trait_name": "daily_gain",
+            "phenotype_path": "data/demo/phenotypes.csv",
+            "genotype_path": "data/demo/genotypes.vcf",
+        },
+    )
+
+    body = response.json()
+
+    assert response.status_code == 202
+    assert body["status"] == "queued"
+    assert body["task_understanding"]["request_scope"] == "supported_gs"
+    assert body["task_understanding"]["trait_name"] == "daily_gain"
+    assert "sex" in body["task_understanding"]["candidate_fixed_effects"]

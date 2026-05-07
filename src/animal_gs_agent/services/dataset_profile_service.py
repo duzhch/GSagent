@@ -45,7 +45,9 @@ def build_dataset_profile(payload: JobSubmissionRequest) -> DatasetProfile:
     normalized_headers = {header.lower() for header in phenotype_headers}
     trait_column_present = payload.trait_name.lower() in normalized_headers if phenotype_headers else None
     if phenotype_headers and payload.trait_name.lower() not in normalized_headers:
-        trait_column_present = False
+        # Also accept long-format phenotype tables where trait values are stored
+        # in a dedicated `trait` column plus a `value` column.
+        trait_column_present = "trait" in normalized_headers and "value" in normalized_headers
 
     validation_flags: list[str] = []
     if not phenotype_exists:

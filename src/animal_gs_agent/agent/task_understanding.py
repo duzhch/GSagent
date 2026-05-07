@@ -1,4 +1,8 @@
-"""Task understanding pipeline with model-backed parsing."""
+"""Task understanding pipeline with model-backed and heuristic parsing."""
+
+from __future__ import annotations
+
+import re
 
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
 
@@ -65,3 +69,45 @@ def understand_task(user_message: str, llm_client) -> TaskUnderstandingResult:
         if isinstance(exc, TaskUnderstandingValidationError):
             raise
         raise TaskUnderstandingValidationError("invalid task understanding payload") from exc
+
+
+_FIXED_EFFECT_CANDIDATES = (
+    "sex",
+    "batch",
+    "farm",
+    "herd",
+    "parity",
+    "pen",
+    "line",
+    "year",
+    "season",
+)
+
+
+def understand_task_heuristic(user_message: str, trait_name: str | None = None) -> TaskUnderstandingResult:
+    """Build a conservative local parse when LLM is unavailable.
+
+    This keeps the harness runnable in offline delivery mode.
+    """
+
+    lowered = user_message.lower()
+    extracted_effects: list[str] = []
+    for token in _FIXED_EFFECT_CANDIDATES:
+        if re.search(rf"\b{re.escape(token)}\b", lowered):
+            extracted_effects.append(token)
+
+    if trait_name is None:
+        match = re.search(r"\bfor\s+([a-zA-Z0-9_]+)", user_message)
+        if match:
+            trait_name = match.group(1)
+
+    return TaskUnderstandingResult(
+        request_scope="supported_gs",
+        trait_name=trait_name,
+        user_goal="rank candidates for genomic selection",
+        candidate_fixed_effects=extracted_effects,
+        population_description="unspecified population",
+        missing_inputs=[],
+        confidence=0.6,
+        clarification_needed=False,
+    )
