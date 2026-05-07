@@ -62,6 +62,7 @@ Current MVP includes:
 - report endpoint (`/jobs/{job_id}/report`) that returns agent-facing explanations with top GEBV candidates
 - artifacts endpoint (`/jobs/{job_id}/artifacts`) that returns reproducible output file manifests
 - structured execution diagnostics (`execution_error`, `execution_error_detail`) and timeline events (`events`)
+- Slurm-aware execution policy for login nodes (auto route to `sbatch` submission)
 
 ## Native Packaging
 

@@ -152,3 +152,47 @@ def test_run_job_transitions_to_failed_when_workflow_runtime_errors(monkeypatch,
     assert body["status"] == "failed"
     assert body["execution_error"] == "workflow_runtime_error"
     assert body["execution_error_detail"] == "nextflow failed with exit code 1"
+
+
+def test_run_job_stays_running_when_submitted_to_slurm(monkeypatch, tmp_path) -> None:
+    _patch_llm(monkeypatch)
+
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text("animal_id,daily_gain,sex\nA1,1.2,M\n", encoding="utf-8")
+
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    client = TestClient(create_app())
+    submit_response = client.post(
+        "/jobs",
+        json={
+            "user_message": "Run genomic selection for daily_gain",
+            "trait_name": "daily_gain",
+            "phenotype_path": str(phenotype_file),
+            "genotype_path": str(genotype_file),
+        },
+    )
+    job_id = submit_response.json()["job_id"]
+
+    def fake_execute_workflow(job):
+        return WorkflowExecutionResult(
+            backend="slurm_nextflow_submit",
+            command=["sbatch", "submit.sh"],
+            result_dir=f"/tmp/{job.job_id}",
+            status="submitted",
+            submission_id="123456",
+        )
+
+    monkeypatch.setattr(
+        "animal_gs_agent.api.routes.jobs.execute_fixed_workflow",
+        fake_execute_workflow,
+    )
+
+    run_response = client.post(f"/jobs/{job_id}/run")
+    body = run_response.json()
+
+    assert run_response.status_code == 200
+    assert body["status"] == "running"
+    assert body["workflow_backend"] == "slurm_nextflow_submit"
+    assert body["events"][-1]["phase"] == "running"

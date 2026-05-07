@@ -112,6 +112,25 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
             jobs_store[job_id] = failed_job
             return failed_job
 
+        if execution_result.status == "submitted":
+            submitted_job = running_job.model_copy(
+                update={
+                    "status": "running",
+                    "execution_error": None,
+                    "execution_error_detail": None,
+                    "workflow_backend": execution_result.backend,
+                    "workflow_result_dir": execution_result.result_dir,
+                    "workflow_submission_id": execution_result.submission_id,
+                    "events": _append_event(
+                        running_job,
+                        phase="running",
+                        message=f"submitted workflow to slurm ({execution_result.submission_id or 'unknown_job_id'})",
+                    ),
+                }
+            )
+            jobs_store[job_id] = submitted_job
+            return submitted_job
+
         workflow_summary = None
         if workflow_output_parser is not None:
             try:

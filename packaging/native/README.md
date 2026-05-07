@@ -16,6 +16,18 @@ This directory is the non-container delivery bundle for clusters without Docker 
 5. Start API:
    - `bash scripts/native/start_api.sh`
 
+## Login Node Rule (Slurm-Aware)
+
+Execution policy is controlled by `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY`:
+
+- `auto`: on login node, submit to Slurm with `sbatch`; on compute/local node, run native workflow directly
+- `slurm`: always submit to Slurm
+- `local`: always run local native workflow
+
+When policy uses Slurm submission, set:
+
+- `ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT`
+
 ## Included Scripts
 
 - `scripts/native/preflight.sh`: validates runtime dependencies and required paths

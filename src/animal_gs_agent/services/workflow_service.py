@@ -1,9 +1,11 @@
 """Fixed GS workflow execution service."""
 
 import os
+import socket
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from animal_gs_agent.schemas.jobs import JobStatusResponse
 
@@ -13,6 +15,8 @@ class WorkflowExecutionResult:
     backend: str
     command: list[str]
     result_dir: str
+    status: Literal["completed", "submitted"] = "completed"
+    submission_id: str | None = None
 
 
 class WorkflowExecutionError(Exception):
@@ -46,6 +50,16 @@ def build_native_nextflow_command(
     ]
 
 
+def _is_login_node() -> bool:
+    forced = os.getenv("ANIMAL_GS_AGENT_FORCE_LOGIN_NODE", "").strip().lower()
+    if forced in {"1", "true", "yes"}:
+        return True
+
+    hostname = socket.gethostname().lower()
+    has_slurm_context = bool(os.getenv("SLURM_CLUSTER_NAME") or os.getenv("SLURM_CONF"))
+    return "login" in hostname and os.getenv("SLURM_JOB_ID") is None and has_slurm_context
+
+
 def execute_fixed_workflow(job: JobStatusResponse) -> WorkflowExecutionResult:
     pipeline_dir = Path(
         os.getenv(
@@ -74,6 +88,47 @@ def execute_fixed_workflow(job: JobStatusResponse) -> WorkflowExecutionResult:
         )
 
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    execution_policy = os.getenv("ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY", "auto").strip().lower()
+    if execution_policy not in {"auto", "local", "slurm"}:
+        raise WorkflowExecutionError(
+            code="workflow_execution_policy_invalid",
+            message=f"unsupported execution policy: {execution_policy}",
+        )
+
+    should_submit_slurm = execution_policy == "slurm" or (
+        execution_policy == "auto" and _is_login_node()
+    )
+    if should_submit_slurm:
+        submit_script = os.getenv("ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT")
+        if not submit_script or not Path(submit_script).exists():
+            raise WorkflowExecutionError(
+                code="workflow_slurm_submit_script_missing",
+                message="slurm submit script is not configured",
+            )
+
+        submit_command = ["sbatch", "--parsable", submit_script]
+        submitted = subprocess.run(
+            submit_command,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if submitted.returncode != 0:
+            raise WorkflowExecutionError(
+                code="workflow_slurm_submit_failed",
+                message=submitted.stderr.strip() or "sbatch submission failed",
+            )
+
+        submission_id = submitted.stdout.strip().split(";")[0]
+        return WorkflowExecutionResult(
+            backend="slurm_nextflow_submit",
+            command=submit_command,
+            result_dir=str(out_dir),
+            status="submitted",
+            submission_id=submission_id or None,
+        )
+
     command = build_native_nextflow_command(job=job, pipeline_dir=pipeline_dir, out_dir=out_dir)
     completed = subprocess.run(
         command,
@@ -94,4 +149,5 @@ def execute_fixed_workflow(job: JobStatusResponse) -> WorkflowExecutionResult:
         backend="native_nextflow",
         command=command,
         result_dir=str(out_dir),
+        status="completed",
     )

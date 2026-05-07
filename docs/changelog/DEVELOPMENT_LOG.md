@@ -118,3 +118,16 @@
   - converted `data/pig5/BF.txt` to `data/pig5/BF_phenotype.csv`
   - contract check passed against `data/pig5/2548bir.bed` with zero validation flags
 - Verified full unit suite in `llm_gblup` environment with `29 passed`.
+
+### Session 5
+
+- Added Slurm-aware execution policy into workflow orchestration:
+  - new policy env `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY` with `auto|slurm|local`
+  - `auto` mode now detects login-node context and routes workflow execution to `sbatch` submission
+  - added `ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT` integration for explicit submission scripts
+- Extended workflow execution state contract:
+  - `WorkflowExecutionResult` now carries `status` (`completed|submitted`) and optional `submission_id`
+  - `/jobs/{id}/run` now keeps job in `running` status when Slurm submission is accepted
+  - added `workflow_submission_id` field in job response schema
+- Updated native packaging docs and env templates with Slurm policy fields.
+- Verified full unit suite in `llm_gblup` environment with `32 passed`.

@@ -74,3 +74,63 @@ def test_execute_fixed_workflow_raises_when_pipeline_missing(tmp_path, monkeypat
         assert exc.code == "workflow_pipeline_missing"
     else:
         raise AssertionError("expected WorkflowExecutionError")
+
+
+def test_execute_fixed_workflow_submits_slurm_on_login_node_in_auto_mode(tmp_path, monkeypatch) -> None:
+    pipeline_dir = tmp_path / "pipeline"
+    pipeline_dir.mkdir()
+    (pipeline_dir / "main.nf").write_text("workflow {}", encoding="utf-8")
+
+    submit_script = tmp_path / "submit.sh"
+    submit_script.write_text("#!/usr/bin/env bash\necho submit\n", encoding="utf-8")
+
+    job = _build_job(
+        phenotype_path=str(tmp_path / "pheno.csv"),
+        genotype_path=str(tmp_path / "geno.vcf"),
+    )
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR", str(pipeline_dir))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT", str(tmp_path / "runs"))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY", "auto")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_FORCE_LOGIN_NODE", "1")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT", str(submit_script))
+
+    class _Completed:
+        returncode = 0
+        stdout = "123456\n"
+        stderr = ""
+
+    monkeypatch.setattr(
+        "animal_gs_agent.services.workflow_service.subprocess.run",
+        lambda *args, **kwargs: _Completed(),
+    )
+
+    result = execute_fixed_workflow(job)
+
+    assert result.backend == "slurm_nextflow_submit"
+    assert result.status == "submitted"
+    assert result.submission_id == "123456"
+
+
+def test_execute_fixed_workflow_raises_when_login_node_without_submit_script(tmp_path, monkeypatch) -> None:
+    pipeline_dir = tmp_path / "pipeline"
+    pipeline_dir.mkdir()
+    (pipeline_dir / "main.nf").write_text("workflow {}", encoding="utf-8")
+
+    job = _build_job(
+        phenotype_path=str(tmp_path / "pheno.csv"),
+        genotype_path=str(tmp_path / "geno.vcf"),
+    )
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR", str(pipeline_dir))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT", str(tmp_path / "runs"))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY", "auto")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_FORCE_LOGIN_NODE", "1")
+    monkeypatch.delenv("ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT", raising=False)
+
+    try:
+        execute_fixed_workflow(job)
+    except WorkflowExecutionError as exc:
+        assert exc.code == "workflow_slurm_submit_script_missing"
+    else:
+        raise AssertionError("expected WorkflowExecutionError")
