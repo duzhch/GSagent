@@ -107,7 +107,18 @@ def execute_fixed_workflow(job: JobStatusResponse) -> WorkflowExecutionResult:
                 message="slurm submit script is not configured",
             )
 
-        submit_command = ["sbatch", "--parsable", submit_script]
+        submit_exports = ",".join(
+            [
+                "ALL",
+                f"ANIMAL_GS_AGENT_JOB_ID={job.job_id}",
+                f"ANIMAL_GS_AGENT_TRAIT_NAME={job.trait_name}",
+                f"ANIMAL_GS_AGENT_GENOTYPE_VCF={job.dataset_profile.genotype_path}",
+                f"ANIMAL_GS_AGENT_PHENOTYPE_CSV={job.dataset_profile.phenotype_path}",
+                f"ANIMAL_GS_AGENT_OUTPUT_DIR={out_dir}",
+                f"ANIMAL_GS_AGENT_PIPELINE_DIR={pipeline_dir}",
+            ]
+        )
+        submit_command = ["sbatch", "--parsable", "--export", submit_exports, submit_script]
         submitted = subprocess.run(
             submit_command,
             capture_output=True,

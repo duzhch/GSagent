@@ -42,3 +42,23 @@ def test_build_dataset_profile_marks_missing_trait_column(tmp_path) -> None:
 
     assert profile.trait_column_present is False
     assert "trait_column_missing" in profile.validation_flags
+
+
+def test_build_dataset_profile_accepts_gzipped_vcf(tmp_path) -> None:
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text("animal_id,daily_gain\nA1,1.2\n", encoding="utf-8")
+
+    genotype_file = tmp_path / "geno.vcf.gz"
+    genotype_file.write_text("placeholder", encoding="utf-8")
+
+    payload = JobSubmissionRequest(
+        user_message="Run genomic selection for daily_gain",
+        trait_name="daily_gain",
+        phenotype_path=str(phenotype_file),
+        genotype_path=str(genotype_file),
+    )
+
+    profile = build_dataset_profile(payload)
+
+    assert profile.genotype_format == "vcf"
+    assert "genotype_format_unsupported" not in profile.validation_flags

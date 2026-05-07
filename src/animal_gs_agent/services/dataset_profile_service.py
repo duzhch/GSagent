@@ -10,6 +10,10 @@ SUPPORTED_GENOTYPE_FORMATS = {"pgen", "bed", "vcf"}
 
 
 def _infer_format(path: str) -> str | None:
+    lowered = path.lower()
+    if lowered.endswith(".vcf.gz") or lowered.endswith(".vcf.bgz"):
+        return "vcf"
+
     suffix = Path(path).suffix.lower().lstrip(".")
     return suffix or None
 

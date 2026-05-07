@@ -95,21 +95,32 @@ def test_execute_fixed_workflow_submits_slurm_on_login_node_in_auto_mode(tmp_pat
     monkeypatch.setenv("ANIMAL_GS_AGENT_FORCE_LOGIN_NODE", "1")
     monkeypatch.setenv("ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT", str(submit_script))
 
+    call_args = {"command": None}
+
     class _Completed:
         returncode = 0
         stdout = "123456\n"
         stderr = ""
 
-    monkeypatch.setattr(
-        "animal_gs_agent.services.workflow_service.subprocess.run",
-        lambda *args, **kwargs: _Completed(),
-    )
+    def _fake_run(command, *args, **kwargs):
+        call_args["command"] = command
+        return _Completed()
+
+    monkeypatch.setattr("animal_gs_agent.services.workflow_service.subprocess.run", _fake_run)
 
     result = execute_fixed_workflow(job)
 
     assert result.backend == "slurm_nextflow_submit"
     assert result.status == "submitted"
     assert result.submission_id == "123456"
+    assert call_args["command"] is not None
+    assert call_args["command"][:3] == ["sbatch", "--parsable", "--export"]
+    export_arg = call_args["command"][3]
+    assert export_arg.startswith("ALL,")
+    assert "ANIMAL_GS_AGENT_JOB_ID=job12345" in export_arg
+    assert f"ANIMAL_GS_AGENT_TRAIT_NAME={job.trait_name}" in export_arg
+    assert f"ANIMAL_GS_AGENT_GENOTYPE_VCF={job.dataset_profile.genotype_path}" in export_arg
+    assert f"ANIMAL_GS_AGENT_PHENOTYPE_CSV={job.dataset_profile.phenotype_path}" in export_arg
 
 
 def test_execute_fixed_workflow_raises_when_login_node_without_submit_script(tmp_path, monkeypatch) -> None:

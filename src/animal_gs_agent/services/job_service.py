@@ -167,6 +167,7 @@ def refresh_running_job(
     slurm_state_checker=None,
     workflow_output_parser=None,
 ) -> JobStatusResponse | None:
+    _load_store_if_needed()
     job = jobs_store.get(job_id)
     if job is None:
         return None

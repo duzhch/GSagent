@@ -1,7 +1,7 @@
 from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetProfile
 from animal_gs_agent.schemas.jobs import JobSubmissionRequest
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
-from animal_gs_agent.services.job_service import create_job, get_job, jobs_store, run_job
+from animal_gs_agent.services.job_service import create_job, get_job, jobs_store, refresh_running_job, run_job
 from animal_gs_agent.services.workflow_service import WorkflowExecutionResult
 
 
@@ -99,3 +99,18 @@ def test_job_store_persists_and_recovers_from_sqlite(monkeypatch, tmp_path) -> N
     assert recovered is not None
     assert recovered.job_id == job_id
     assert recovered.trait_name == "daily_gain"
+
+
+def test_refresh_running_job_loads_store_before_lookup(monkeypatch, tmp_path) -> None:
+    sqlite_path = tmp_path / "jobs_store.db"
+    monkeypatch.setenv("ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH", str(sqlite_path))
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_PATH", raising=False)
+    jobs_store.clear()
+
+    created = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+    job_id = created.job_id
+
+    jobs_store.clear()
+    refreshed = refresh_running_job(job_id)
+    assert refreshed is not None
+    assert refreshed.job_id == job_id
