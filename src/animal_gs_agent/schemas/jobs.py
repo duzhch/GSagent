@@ -1,5 +1,7 @@
 """Job request and response schemas."""
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 from animal_gs_agent.schemas.dataset_profile import DatasetProfile
@@ -15,15 +17,17 @@ class JobSubmissionRequest(BaseModel):
 
 class JobSubmissionResponse(BaseModel):
     job_id: str
-    status: str
+    status: Literal["queued", "running", "completed", "failed"]
     trait_name: str
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
+    execution_error: str | None = None
 
 
 class JobStatusResponse(BaseModel):
     job_id: str
-    status: str
+    status: Literal["queued", "running", "completed", "failed"]
     trait_name: str
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
+    execution_error: str | None = None

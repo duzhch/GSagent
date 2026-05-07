@@ -31,3 +31,22 @@ def create_job(
 
 def get_job(job_id: str) -> JobStatusResponse | None:
     return jobs_store.get(job_id)
+
+
+def run_job(job_id: str) -> JobStatusResponse | None:
+    job = jobs_store.get(job_id)
+    if job is None:
+        return None
+
+    running_job = job.model_copy(update={"status": "running", "execution_error": None})
+    jobs_store[job_id] = running_job
+
+    first_error = next(iter(running_job.dataset_profile.validation_flags), None)
+    if first_error is not None:
+        failed_job = running_job.model_copy(update={"status": "failed", "execution_error": first_error})
+        jobs_store[job_id] = failed_job
+        return failed_job
+
+    completed_job = running_job.model_copy(update={"status": "completed", "execution_error": None})
+    jobs_store[job_id] = completed_job
+    return completed_job

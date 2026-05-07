@@ -36,3 +36,22 @@
 - The job API now stores and returns structured task-understanding output together with the job metadata.
 - Added a first dataset profiling layer to job submission, currently focused on path-level existence checks for genotype and phenotype inputs.
 - Changed the initial job lifecycle state from `pending` to `queued` to better reflect pre-execution workflow staging.
+
+## 2026-05-07
+
+### Session 1
+
+- Expanded dataset profiling from simple path checks to lightweight dataset introspection:
+  - file format inference for phenotype/genotype inputs
+  - phenotype header extraction for CSV/TSV/TXT sources
+  - trait-column presence checks tied to the submitted `trait_name`
+  - explicit `validation_flags` for missing files, unsupported formats, and missing trait columns
+- Added a first explicit job execution endpoint: `POST /jobs/{job_id}/run`.
+- Implemented in-memory job state transitions:
+  - `queued -> running -> completed` when validation passes
+  - `queued -> running -> failed` when validation flags are present
+- Added failure surfacing through `execution_error` in job status records.
+- Added new unit tests for:
+  - dataset profile header/trait detection
+  - run endpoint transitions for valid and invalid datasets
+- Verified full unit suite in `llm_gblup` environment with `18 passed`.

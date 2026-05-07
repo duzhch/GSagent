@@ -15,13 +15,18 @@ from animal_gs_agent.schemas.jobs import (
     JobSubmissionResponse,
 )
 from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
-from animal_gs_agent.services.job_service import create_job, get_job
+from animal_gs_agent.services.job_service import create_job, get_job, run_job
 
 
 def create_jobs_router() -> APIRouter:
     router = APIRouter()
 
-    @router.post("/jobs", response_model=JobSubmissionResponse, status_code=status.HTTP_202_ACCEPTED)
+    @router.post(
+        "/jobs",
+        response_model=JobSubmissionResponse,
+        response_model_exclude_none=True,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
     def submit_job(payload: JobSubmissionRequest) -> JobSubmissionResponse:
         settings = get_settings()
         if not settings.llm.base_url or not settings.llm.api_key or not settings.llm.model:
@@ -40,9 +45,16 @@ def create_jobs_router() -> APIRouter:
             dataset_profile=dataset_profile,
         )
 
-    @router.get("/jobs/{job_id}", response_model=JobStatusResponse)
+    @router.get("/jobs/{job_id}", response_model=JobStatusResponse, response_model_exclude_none=True)
     def get_job_status(job_id: str) -> JobStatusResponse:
         job = get_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        return job
+
+    @router.post("/jobs/{job_id}/run", response_model=JobStatusResponse, response_model_exclude_none=True)
+    def run_submitted_job(job_id: str) -> JobStatusResponse:
+        job = run_job(job_id)
         if job is None:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
         return job

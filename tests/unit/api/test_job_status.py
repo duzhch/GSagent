@@ -62,5 +62,12 @@ def test_get_job_returns_submitted_job_status(monkeypatch) -> None:
                 "phenotype_exists": False,
                 "genotype_exists": False,
             },
+            "phenotype_format": "csv",
+            "genotype_format": "pgen",
+            "phenotype_headers": [],
+            "validation_flags": [
+                "phenotype_not_found",
+                "genotype_not_found",
+            ],
         },
     }
