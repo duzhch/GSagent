@@ -1,5 +1,7 @@
 """Job submission routes."""
 
+import os
+
 from fastapi import APIRouter, HTTPException, status
 
 from animal_gs_agent.agent.task_understanding import (
@@ -18,8 +20,15 @@ from animal_gs_agent.schemas.jobs import (
 )
 from animal_gs_agent.services.artifact_service import list_artifacts
 from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
-from animal_gs_agent.services.job_service import create_job, get_job, refresh_running_job, run_job
+from animal_gs_agent.services.job_service import (
+    create_job,
+    get_job,
+    mark_job_queued_for_worker,
+    refresh_running_job,
+    run_job,
+)
 from animal_gs_agent.services.report_service import build_job_report
+from animal_gs_agent.services.run_queue_service import enqueue_run_job
 from animal_gs_agent.services.slurm_service import poll_slurm_job_state
 from animal_gs_agent.services.workflow_result_service import parse_workflow_outputs
 from animal_gs_agent.services.workflow_service import execute_fixed_workflow
@@ -65,6 +74,18 @@ def create_jobs_router() -> APIRouter:
 
     @router.post("/jobs/{job_id}/run", response_model=JobStatusResponse, response_model_exclude_none=True)
     def run_submitted_job(job_id: str) -> JobStatusResponse:
+        async_enabled = os.getenv("ANIMAL_GS_AGENT_ASYNC_RUN_ENABLED", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        if async_enabled:
+            job = mark_job_queued_for_worker(job_id)
+            if job is None:
+                raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+            enqueue_run_job(job_id)
+            return job
+
         job = run_job(
             job_id,
             workflow_executor=execute_fixed_workflow,

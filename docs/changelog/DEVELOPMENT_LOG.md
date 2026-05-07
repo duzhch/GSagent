@@ -169,3 +169,17 @@
 - Added practical unit test coverage for SQLite persistence and recovery.
 - Updated packaging env template and architecture/roadmap docs to include SQLite mode.
 - Verified full unit suite in `llm_gblup` environment with `38 passed`.
+
+### Session 9
+
+- Added practical workerization with async queue mode:
+  - new SQLite-backed run queue service (`run_queue_service.py`)
+  - enqueue endpoint behavior gated by `ANIMAL_GS_AGENT_ASYNC_RUN_ENABLED=1`
+  - `POST /jobs/{id}/run` can now enqueue instead of immediate execution
+  - added worker consumer entrypoint `scripts/native/worker_loop.py`
+- Added unit test coverage for:
+  - queue enqueue/claim semantics
+  - async run API behavior
+- Updated delivery layout smoke test and native packaging docs for worker script.
+- Updated full-picture and overall-plan docs with async mode architecture.
+- Verified full unit suite in `llm_gblup` environment with `41 passed`.

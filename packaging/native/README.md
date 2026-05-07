@@ -33,5 +33,6 @@ When policy uses Slurm submission, set:
 - `scripts/native/preflight.sh`: validates runtime dependencies and required paths
 - `scripts/native/start_api.sh`: starts FastAPI service with repository-local settings
 - `scripts/native/demo_run.sh`: executes a full API demo flow
+- `scripts/native/worker_loop.py`: polls async run queue and executes queued jobs
 - `scripts/native/real_data_contract_check.py`: validates phenotype/genotype contract before run
 - `scripts/native/prepare_pig_trait_csv.py`: converts pig trait text files into phenotype CSV

@@ -142,6 +142,26 @@ def get_job(job_id: str) -> JobStatusResponse | None:
     return jobs_store.get(job_id)
 
 
+def mark_job_queued_for_worker(job_id: str) -> JobStatusResponse | None:
+    _load_store_if_needed()
+    job = jobs_store.get(job_id)
+    if job is None:
+        return None
+    if job.status in {"running", "completed"}:
+        return job
+    updated = job.model_copy(
+        update={
+            "status": "queued",
+            "execution_error": None,
+            "execution_error_detail": None,
+            "events": _append_event(job, phase="queued", message="queued for async worker execution"),
+        }
+    )
+    jobs_store[job_id] = updated
+    _persist_store_if_needed()
+    return updated
+
+
 def refresh_running_job(
     job_id: str,
     slurm_state_checker=None,

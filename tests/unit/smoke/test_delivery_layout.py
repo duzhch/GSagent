@@ -10,6 +10,7 @@ def test_native_delivery_layout_exists() -> None:
         "scripts/native/preflight.sh",
         "scripts/native/start_api.sh",
         "scripts/native/demo_run.sh",
+        "scripts/native/worker_loop.py",
         "docs/delivery/REAL_DATA_RUNBOOK.md",
         "docs/delivery/DEMO_10MIN_SCRIPT.md",
         "docs/delivery/MVP_ACCEPTANCE_CHECKLIST.md",

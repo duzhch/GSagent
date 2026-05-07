@@ -30,6 +30,10 @@ The agent is intentionally not a free-form bioinformatics command generator.
 - Optional durable state:
   - set `ANIMAL_GS_AGENT_JOB_STORE_PATH` to persist and recover jobs as JSON
   - or set `ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH` for SQLite-based persistence
+- Optional async run queue:
+  - `ANIMAL_GS_AGENT_ASYNC_RUN_ENABLED=1`
+  - queue storage: `ANIMAL_GS_AGENT_RUN_QUEUE_SQLITE_PATH`
+  - worker entrypoint: `scripts/native/worker_loop.py`
 - Job lifecycle:
   - `queued -> running -> completed/failed`
 - Event timeline:
@@ -94,6 +98,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
 - Real-data contract check scripts included
 - Slurm queue-aware run and refresh behavior
 - Optional persistent job-state file survives restart
+- Optional SQLite-backed async queue + worker loop
 - Idempotent run guard avoids duplicate execution
 
 ## 5. Current Limitations

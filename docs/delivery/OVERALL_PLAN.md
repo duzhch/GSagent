@@ -27,6 +27,9 @@ Build a Slurm-ready, reproducible genomic-selection agent that:
   - JSON path: `ANIMAL_GS_AGENT_JOB_STORE_PATH`
   - SQLite path: `ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH`
 - Idempotent run behavior for `running/completed` jobs (prevents duplicate execution)
+- Async queue/worker mode available:
+  - API enqueue via `ANIMAL_GS_AGENT_ASYNC_RUN_ENABLED=1`
+  - worker consumer via `scripts/native/worker_loop.py`
 - Native packaging bundle and delivery docs
 
 ## 3. Remaining Work Packages
@@ -85,7 +88,8 @@ Acceptance:
 
 Progress note:
 - MVP-level persistence (JSON + SQLite) and idempotent run controls are now implemented.
-- Remaining focus in WP-D is persistent database-grade backend and workerization.
+- MVP-level workerization is now implemented with SQLite queue + polling worker.
+- Remaining focus in WP-D is production worker orchestration and DB-grade concurrency hardening.
 
 ## 4. Milestone Timeline
 
