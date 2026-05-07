@@ -63,6 +63,7 @@ Current MVP includes:
 - artifacts endpoint (`/jobs/{job_id}/artifacts`) that returns reproducible output file manifests
 - structured execution diagnostics (`execution_error`, `execution_error_detail`) and timeline events (`events`)
 - Slurm-aware execution policy for login nodes (auto route to `sbatch` submission)
+- optional async queue mode plus worker control plane (`/worker/health`, `/worker/process-once`)
 
 ## Native Packaging
 

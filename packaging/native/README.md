@@ -36,3 +36,8 @@ When policy uses Slurm submission, set:
 - `scripts/native/worker_loop.py`: polls async run queue and executes queued jobs
 - `scripts/native/real_data_contract_check.py`: validates phenotype/genotype contract before run
 - `scripts/native/prepare_pig_trait_csv.py`: converts pig trait text files into phenotype CSV
+
+## Worker Control Plane
+
+- `GET /worker/health`: queue snapshot and async mode visibility
+- `POST /worker/process-once`: manually process one queued job (useful for controlled demo and operations)

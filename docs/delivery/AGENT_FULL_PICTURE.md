@@ -23,6 +23,8 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - `GET /jobs/{job_id}`
   - `GET /jobs/{job_id}/report`
   - `GET /jobs/{job_id}/artifacts`
+  - `GET /worker/health`
+  - `POST /worker/process-once`
 
 ## 2.2 State and Storage
 
@@ -100,6 +102,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
 - Optional persistent job-state file survives restart
 - Optional SQLite-backed async queue + worker loop
 - Idempotent run guard avoids duplicate execution
+- Worker control-plane endpoints are available for operational probing and manual queue drain
 
 ## 5. Current Limitations
 

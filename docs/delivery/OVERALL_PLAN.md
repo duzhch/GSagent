@@ -30,6 +30,7 @@ Build a Slurm-ready, reproducible genomic-selection agent that:
 - Async queue/worker mode available:
   - API enqueue via `ANIMAL_GS_AGENT_ASYNC_RUN_ENABLED=1`
   - worker consumer via `scripts/native/worker_loop.py`
+  - worker control routes: `/worker/health`, `/worker/process-once`
 - Native packaging bundle and delivery docs
 
 ## 3. Remaining Work Packages

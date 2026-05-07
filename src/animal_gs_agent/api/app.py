@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from animal_gs_agent.api.routes.agent import create_agent_router
 from animal_gs_agent.api.routes.health import create_health_router
 from animal_gs_agent.api.routes.jobs import create_jobs_router
+from animal_gs_agent.api.routes.worker import create_worker_router
 
 
 def create_app() -> FastAPI:
@@ -12,4 +13,5 @@ def create_app() -> FastAPI:
     app.include_router(create_agent_router())
     app.include_router(create_health_router())
     app.include_router(create_jobs_router())
+    app.include_router(create_worker_router())
     return app

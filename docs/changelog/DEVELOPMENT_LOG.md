@@ -183,3 +183,15 @@
 - Updated delivery layout smoke test and native packaging docs for worker script.
 - Updated full-picture and overall-plan docs with async mode architecture.
 - Verified full unit suite in `llm_gblup` environment with `41 passed`.
+
+### Session 10
+
+- Added worker control-plane service and API routes:
+  - `GET /worker/health`
+  - `POST /worker/process-once`
+- Added worker service layer for queue snapshot and one-shot queue consumption.
+- Added unit tests for:
+  - worker service behavior (`test_worker_service.py`)
+  - worker API routes (`test_worker_routes.py`)
+- Updated README/native packaging/overall plan docs to include worker control-plane endpoints.
+- Verified full unit suite in `llm_gblup` environment with `45 passed`.

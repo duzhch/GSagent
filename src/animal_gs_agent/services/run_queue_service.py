@@ -127,3 +127,11 @@ def get_run_queue_record(job_id: str) -> dict | None:
         "attempts": row[4],
         "last_error": row[5],
     }
+
+
+def count_pending_jobs() -> int:
+    path = _queue_db_path()
+    _init_db(path)
+    with sqlite3.connect(path) as conn:
+        row = conn.execute("SELECT COUNT(*) FROM run_queue WHERE status='pending'").fetchone()
+    return int(row[0]) if row else 0
