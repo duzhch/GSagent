@@ -20,6 +20,7 @@ from animal_gs_agent.services.workflow_service import WorkflowExecutionError
 from animal_gs_agent.services.model_pool_service import build_model_pool_plan
 from animal_gs_agent.services.trial_orchestrator_service import build_trial_plan
 from animal_gs_agent.services.validation_protocol_service import build_validation_protocol_plan
+from animal_gs_agent.services.badcase_service import build_badcase_advice
 
 jobs_store: dict[str, JobStatusResponse] = {}
 
@@ -257,6 +258,8 @@ def create_job(
     task_understanding: TaskUnderstandingResult,
     dataset_profile: DatasetProfile,
 ) -> JobSubmissionResponse:
+    _load_store_if_needed()
+    historical_jobs = [job for job in jobs_store.values() if job.status in {"completed", "failed"}]
     model_pool_plan = build_model_pool_plan(task_understanding, dataset_profile)
     trial_strategy_plan = build_trial_plan(
         max_trials=max(1, _int_env("ANIMAL_GS_AGENT_STRATEGY_MAX_TRIALS", 5)),
@@ -266,6 +269,13 @@ def create_job(
         min_improvement=_float_env("ANIMAL_GS_AGENT_STRATEGY_MIN_IMPROVEMENT", 0.0),
     )
     validation_protocol_plan = build_validation_protocol_plan(task_understanding, dataset_profile)
+    badcase_advice = build_badcase_advice(
+        task_understanding=task_understanding,
+        dataset_profile=dataset_profile,
+        historical_jobs=historical_jobs,
+        similarity_threshold=_float_env("ANIMAL_GS_AGENT_BADCASE_SIMILARITY_THRESHOLD", 0.50),
+        top_k=max(1, _int_env("ANIMAL_GS_AGENT_BADCASE_TOP_K", 3)),
+    )
     job = JobStatusResponse(
         job_id=uuid4().hex[:8],
         status="queued",
@@ -275,6 +285,7 @@ def create_job(
         model_pool_plan=model_pool_plan,
         trial_strategy_plan=trial_strategy_plan,
         validation_protocol_plan=validation_protocol_plan,
+        badcase_advice=badcase_advice,
         events=[
             JobEvent(
                 phase="queued",

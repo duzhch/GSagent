@@ -1,7 +1,7 @@
 import sqlite3
 
 from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetProfile
-from animal_gs_agent.schemas.jobs import JobSubmissionRequest
+from animal_gs_agent.schemas.jobs import JobStatusResponse, JobSubmissionRequest
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
 from animal_gs_agent.services.job_service import create_job, get_job, jobs_store, refresh_running_job, run_job
 from animal_gs_agent.services.workflow_service import WorkflowExecutionResult
@@ -160,3 +160,44 @@ def test_create_job_attaches_validation_protocol_plan() -> None:
     assert cross.metrics == ["cross_pop_pearson", "cross_pop_rmse"]
     assert cross.split_records[0].train_population == "pig"
     assert cross.split_records[0].validation_population == "held-out population"
+
+
+def test_create_job_queries_historical_badcase_and_emits_preventive_actions() -> None:
+    jobs_store.clear()
+
+    historical = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+    historical_profile = DatasetProfile.model_validate(
+        {
+            **historical.dataset_profile.model_dump(),
+            "risk_tags": ["population_structure_outliers"],
+            "phenotype_diagnostics": {
+                "sample_count": 4,
+                "trait_value_count": 4,
+                "outlier_count": 0,
+                "outlier_ratio": 0.0,
+                "outlier_zscore_threshold": 3.0,
+                "high_outlier_ratio_threshold": 0.1,
+                "batch_column": "batch",
+                "batch_level_count": 2,
+                "batch_effect_eta2": 0.5,
+                "batch_effect_significant": True,
+                "batch_effect_eta2_threshold": 0.2,
+                "recommendations": ["covariate=batch"],
+            },
+        }
+    )
+    jobs_store[historical.job_id] = JobStatusResponse.model_validate(
+        {
+            **historical.model_dump(),
+            "status": "completed",
+            "dataset_profile": historical_profile.model_dump(),
+        }
+    )
+
+    created = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+
+    assert created.badcase_advice is not None
+    assert created.badcase_advice.queried is True
+    assert created.badcase_advice.high_similarity_hit is True
+    assert len(created.badcase_advice.similar_cases) >= 1
+    assert any("covariate=batch" in action for action in created.badcase_advice.preventive_actions)

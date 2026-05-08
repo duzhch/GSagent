@@ -664,3 +664,32 @@
 - Updated delivery docs/matrix:
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P1-01-01=PASS`, `AC-P1-01-02=PASS`, `AC-P1-01-03=PASS`)
+
+### Session 33
+
+- Implemented `E-P1-02` badcase memory loop slice:
+  - `F-P1-02-01` badcase schema
+  - `F-P1-02-02` similarity retrieval
+  - `F-P1-02-03` preventive-action generation
+- Added schemas:
+  - `src/animal_gs_agent/schemas/badcase.py`
+    - `BadcaseRecord`
+    - `SimilarBadcaseMatch`
+    - `BadcaseAdvice`
+- Added service:
+  - `src/animal_gs_agent/services/badcase_service.py`
+    - `build_badcase_record(...)`
+    - `build_badcase_advice(...)`
+    - composite similarity scoring + risk/action mapping
+- Extended job creation:
+  - `create_job(...)` now queries historical badcases before run
+  - output attached as `badcase_advice` in `JobSubmissionResponse` / `JobStatusResponse`
+- Added tests:
+  - `tests/unit/p1_badcase_schema.py`
+  - `tests/unit/services/test_job_service_practical.py::test_create_job_queries_historical_badcase_and_emits_preventive_actions`
+- Added evidence docs:
+  - `tests/integration/p1_badcase_similarity.md`
+  - `tests/e2e/p1_preventive_actions.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P1-02-01=PASS`, `AC-P1-02-02=PASS`, `AC-P1-02-03=PASS`)

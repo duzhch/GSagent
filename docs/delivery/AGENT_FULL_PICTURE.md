@@ -142,6 +142,11 @@ QC governance notes:
   - lexical retrieval + rerank for recommendation queries
   - report-time recommendation citations (`knowledge_citations`)
   - explicit conflict marking when positive and negative evidence coexist
+- Badcase memory loop now includes:
+  - pre-run historical badcase query attached to job state (`badcase_advice`)
+  - similarity scoring across trait/population/risk context
+  - high-similarity hit flag with matched historical cases
+  - preventive action generation from historical risk tags and recommendations
 
 ## 2.5 Slurm Awareness
 
