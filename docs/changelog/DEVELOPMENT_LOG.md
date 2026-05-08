@@ -413,3 +413,49 @@
 - Updated trace matrix:
   - `AC-P0-02-06` -> `IN_PROGRESS`
   - `AC-P0-02-07` -> `IN_PROGRESS`
+
+### Session 21
+
+- Started `E-P0-03` model-candidate pool slice (`F-P0-03-01`):
+  - added model-pool planning schemas:
+    - `src/animal_gs_agent/schemas/model_pool.py`
+  - added model-pool availability service:
+    - `src/animal_gs_agent/services/model_pool_service.py`
+  - candidate set currently includes:
+    - `GBLUP`
+    - `BayesB`
+    - `XGBoost`
+  - service now emits:
+    - `available_models`
+    - per-model `disabled_reasons`
+- Added and validated unit evidence:
+  - `tests/unit/p0_model_pool_availability.py`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-03-01=PASS`)
+- Verified targeted regression set:
+  - `tests/unit/p0_qc_missingness_test.py`
+  - `tests/unit/p0_trace_schema_test.py`
+  - `tests/unit/services/test_dataset_profile_service.py`
+  - `tests/unit/api/test_job_run.py`
+  - `tests/unit/api/test_job_report.py`
+
+### Session 22
+
+- Continued `E-P0-03` with trial-orchestration budget guard (`F-P0-03-02`):
+  - added trial-strategy schemas:
+    - `src/animal_gs_agent/schemas/trial_strategy.py`
+  - added budget-constrained trial orchestrator service:
+    - `src/animal_gs_agent/services/trial_orchestrator_service.py`
+  - implemented core outputs:
+    - trial sequence
+    - selected model
+    - budget consumed
+    - stop reason
+  - implemented reproducibility behavior:
+    - deterministic trial replay under identical `random_seed`
+- Added and validated unit evidence:
+  - `tests/unit/p0_trial_budget_guard.py`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-03-03=PASS`)

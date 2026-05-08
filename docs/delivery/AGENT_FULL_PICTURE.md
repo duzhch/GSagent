@@ -101,6 +101,14 @@ QC governance notes:
   - batch-effect significance estimate
   - model-stage recommendations (for example `covariate=batch` or stratified split)
 - Risk tags are carried through run/report layers for model-stage awareness.
+- Model-pool planning service can now emit candidate availability and disabled reasons for:
+  - `GBLUP`
+  - `BayesB`
+  - `XGBoost`
+- Trial-orchestrator service now supports budget-constrained planning:
+  - input: `max_trials`, candidate model set, `random_seed`
+  - output: trial sequence, selected model, budget consumed, stop reason
+  - stop reasons include `budget_exhausted`, `early_stop_no_improvement`, `no_candidate_models`
 
 ## 2.5 Slurm Awareness
 

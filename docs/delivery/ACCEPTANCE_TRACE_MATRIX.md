@@ -31,9 +31,9 @@
 | `F-P0-02-02` | `AC-P0-02-05` | `TC-P0-02-05` | Risk | `tests/risk/p0_structure_risk_tag.md` | QA | IN_PROGRESS |
 | `F-P0-02-03` | `AC-P0-02-06` | `TC-P0-02-06` | IT | `tests/integration/p0_pheno_batch_diagnosis.md` | Dev+QA | IN_PROGRESS |
 | `F-P0-02-03` | `AC-P0-02-07` | `TC-P0-02-07` | E2E | `tests/e2e/p0_covariate_recommendation.md` | QA | IN_PROGRESS |
-| `F-P0-03-01` | `AC-P0-03-01` | `TC-P0-03-01` | UT | `tests/unit/p0_model_pool_availability.py` | Dev | TBD |
+| `F-P0-03-01` | `AC-P0-03-01` | `TC-P0-03-01` | UT | `tests/unit/p0_model_pool_availability.py` | Dev | PASS |
 | `F-P0-03-01` | `AC-P0-03-02` | `TC-P0-03-02` | IT | `tests/integration/p0_model_pool_rejection_reason.md` | QA | TBD |
-| `F-P0-03-02` | `AC-P0-03-03` | `TC-P0-03-03` | UT | `tests/unit/p0_trial_budget_guard.py` | Dev | TBD |
+| `F-P0-03-02` | `AC-P0-03-03` | `TC-P0-03-03` | UT | `tests/unit/p0_trial_budget_guard.py` | Dev | PASS |
 | `F-P0-03-02` | `AC-P0-03-04` | `TC-P0-03-04` | E2E | `tests/e2e/p0_early_stop_reason.md` | QA | TBD |
 | `F-P0-03-02` | `AC-P0-03-05` | `TC-P0-03-05` | Risk | `tests/risk/p0_reproducibility_seed.md` | QA | TBD |
 | `F-P0-03-03` | `AC-P0-03-06` | `TC-P0-03-06` | IT | `tests/integration/p0_within_pop_protocol.md` | Dev+QA | TBD |
