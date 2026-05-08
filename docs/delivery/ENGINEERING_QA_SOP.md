@@ -85,6 +85,22 @@
 3. 回归不破坏 P0 已通过能力。
 4. 文档更新完整。
 
+## 5.5 统一验收执行（Phase A）
+
+针对已实现的治理链路（P0-01 与 P1-04 子集），统一执行命令：
+
+```bash
+cd /work/home/zyqlab/dzhichao/Agent0428/animal_gs_agent
+.venv/bin/python scripts/delivery/run_phase_a_acceptance.py \
+  --workdir /work/home/zyqlab/dzhichao/Agent0428/animal_gs_agent \
+  --output /work/home/zyqlab/dzhichao/Agent0428/animal_gs_agent/tests/integration/phase_a_unified_acceptance_latest.md
+```
+
+执行结果口径：
+1. 若脚本退出码为 `0`，表示本批检查全通过。
+2. 若脚本退出码非 `0`，必须阻断本批验收并进入修复流程。
+3. 追踪矩阵中的对应 AC 行应指向统一证据文件：`tests/integration/phase_a_unified_acceptance_latest.md`。
+
 ## 6. Definition of Ready（DoR）
 
 Feature 进入开发前必须满足：
@@ -133,4 +149,3 @@ Feature 完成必须满足：
 2. 无 P0 blocker。
 3. 关键指标不劣化（由 QA 报告给出）。
 4. 离线包或部署流程可复现演示通过。
-

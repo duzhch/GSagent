@@ -324,3 +324,20 @@
   - P0 deep-QC and strategy-agent upgrades
 - Updated document navigation map:
   - `docs/delivery/DELIVERY_DOC_MAP.md` now includes the new capability-gap entry.
+
+### Session 17
+
+- Implemented a unified Phase-A acceptance runner for governance-related AC closure:
+  - service module: `src/animal_gs_agent/services/acceptance_runner_service.py`
+  - CLI wrapper: `scripts/delivery/run_phase_a_acceptance.py`
+  - generated evidence file: `tests/integration/phase_a_unified_acceptance_latest.md`
+- Added TDD coverage for the new acceptance runner:
+  - `tests/unit/services/test_acceptance_runner_service.py`
+  - `tests/unit/scripts/test_run_phase_a_acceptance.py`
+- Hardened runner interpreter behavior:
+  - switched test commands from fixed `python` to `sys.executable` for cluster compatibility.
+- Updated delivery governance docs:
+  - added unified acceptance execution section in `docs/delivery/ENGINEERING_QA_SOP.md`
+  - updated matrix evidence/status for:
+    - `AC-P0-01-01`, `AC-P0-01-02`, `AC-P0-01-03`
+    - `AC-P1-04-01`, `AC-P1-04-02`

@@ -19,9 +19,9 @@
 
 | Req ID | AC ID | Test Case ID | Test Type | Evidence | Owner | Coverage Status |
 |---|---|---|---|---|---|---|
-| `F-P0-01-01` | `AC-P0-01-01` | `TC-P0-01-01` | IT | `tests/integration/p0_supervisor_flow.md` | Dev+QA | IN_PROGRESS |
-| `F-P0-01-01` | `AC-P0-01-02` | `TC-P0-01-02` | Risk | `tests/risk/p0_retry_escalation.md` | Dev+QA | IN_PROGRESS |
-| `F-P0-01-01` | `AC-P0-01-03` | `TC-P0-01-03` | E2E | `tests/e2e/p0_trace_visibility.md` | Dev+QA | IN_PROGRESS |
+| `F-P0-01-01` | `AC-P0-01-01` | `TC-P0-01-01` | IT | `tests/integration/phase_a_unified_acceptance_latest.md` | Dev+QA | PASS |
+| `F-P0-01-01` | `AC-P0-01-02` | `TC-P0-01-02` | Risk | `tests/integration/phase_a_unified_acceptance_latest.md` | Dev+QA | PASS |
+| `F-P0-01-01` | `AC-P0-01-03` | `TC-P0-01-03` | E2E | `tests/integration/phase_a_unified_acceptance_latest.md` | Dev+QA | PASS |
 | `F-P0-01-02` | `AC-P0-01-04` | `TC-P0-01-04` | UT | `tests/unit/p0_trace_schema_test.py` | Dev | PASS |
 | `F-P0-01-02` | `AC-P0-01-05` | `TC-P0-01-05` | IT | `tests/integration/p0_trace_linkage.md` | Dev+QA | PASS |
 | `F-P0-02-01` | `AC-P0-02-01` | `TC-P0-02-01` | UT | `tests/unit/p0_qc_missingness_test.py` | Dev | TBD |
@@ -62,8 +62,8 @@
 | `F-P1-03-01` | `AC-P1-03-01` | `TC-P1-03-01` | IT | `tests/integration/p1_technical_report.md` | Dev+QA | TBD |
 | `F-P1-03-02` | `AC-P1-03-02` | `TC-P1-03-02` | IT | `tests/integration/p1_decision_report.md` | QA | TBD |
 | `F-P1-03-03` | `AC-P1-03-03` | `TC-P1-03-03` | IT | `tests/integration/p1_management_report.md` | QA | TBD |
-| `F-P1-04-01` | `AC-P1-04-01` | `TC-P1-04-01` | Risk | `tests/risk/p1_approval_gate.md` | Dev+QA | IN_PROGRESS |
-| `F-P1-04-02` | `AC-P1-04-02` | `TC-P1-04-02` | IT | `tests/integration/p1_override_log.md` | Dev+QA | IN_PROGRESS |
+| `F-P1-04-01` | `AC-P1-04-01` | `TC-P1-04-01` | Risk | `tests/integration/phase_a_unified_acceptance_latest.md` | Dev+QA | PASS |
+| `F-P1-04-02` | `AC-P1-04-02` | `TC-P1-04-02` | IT | `tests/integration/phase_a_unified_acceptance_latest.md` | Dev+QA | PASS |
 | `F-P1-04-03` | `AC-P1-04-03` | `TC-P1-04-03` | E2E | `tests/e2e/p1_abort_and_fallback.md` | QA | TBD |
 
 ## 4. P2 追踪矩阵
