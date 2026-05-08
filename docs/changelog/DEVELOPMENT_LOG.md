@@ -521,3 +521,43 @@
 - Updated delivery docs/matrix:
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-03-06=PASS`, `AC-P0-03-07=PASS`)
+
+### Session 26
+
+- Started `E-P0-04` audit-agent claim-evidence slice (`F-P0-04-01`):
+  - added audit claim schema:
+    - `src/animal_gs_agent/schemas/audit_claim.py`
+  - added audit service:
+    - `src/animal_gs_agent/services/audit_service.py`
+  - report now includes claim-evidence output:
+    - `claim_evidence_map` in `JobReportResponse`
+    - populated by `build_job_report(...)`
+- Added and verified tests:
+  - `tests/unit/p0_claim_evidence_map.py`
+    - evidence binding acceptance check
+    - reject path when evidence is missing
+- Added risk evidence doc:
+  - `tests/risk/p0_reject_no_evidence.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-04-01=PASS`, `AC-P0-04-02=PASS`)
+
+### Session 27
+
+- Continued `E-P0-04` leakage + metric-consistency audit slice (`F-P0-04-02`):
+  - added structured audit verdict schema:
+    - `AuditCheckResult` in `src/animal_gs_agent/schemas/audit_claim.py`
+  - extended audit service:
+    - `run_audit_checks(...)` emits:
+      - `leakage_check`
+      - `metric_consistency_check`
+  - report response now includes:
+    - `audit_checks` in `JobReportResponse`
+- Added verification:
+  - `tests/unit/p0_claim_evidence_map.py::test_audit_checks_detect_leakage_and_metric_conflict`
+- Added integration evidence docs:
+  - `tests/integration/p0_leakage_check.md`
+  - `tests/integration/p0_metric_consistency.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-04-03=PASS`, `AC-P0-04-04=PASS`)

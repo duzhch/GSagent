@@ -38,10 +38,10 @@
 | `F-P0-03-02` | `AC-P0-03-05` | `TC-P0-03-05` | Risk | `tests/risk/p0_reproducibility_seed.md` | QA | PASS |
 | `F-P0-03-03` | `AC-P0-03-06` | `TC-P0-03-06` | IT | `tests/integration/p0_within_pop_protocol.md` | Dev+QA | PASS |
 | `F-P0-03-03` | `AC-P0-03-07` | `TC-P0-03-07` | IT | `tests/integration/p0_cross_pop_protocol.md` | Dev+QA | PASS |
-| `F-P0-04-01` | `AC-P0-04-01` | `TC-P0-04-01` | UT | `tests/unit/p0_claim_evidence_map.py` | Dev | TBD |
-| `F-P0-04-01` | `AC-P0-04-02` | `TC-P0-04-02` | Risk | `tests/risk/p0_reject_no_evidence.md` | QA | TBD |
-| `F-P0-04-02` | `AC-P0-04-03` | `TC-P0-04-03` | IT | `tests/integration/p0_leakage_check.md` | QA | TBD |
-| `F-P0-04-02` | `AC-P0-04-04` | `TC-P0-04-04` | IT | `tests/integration/p0_metric_consistency.md` | QA | TBD |
+| `F-P0-04-01` | `AC-P0-04-01` | `TC-P0-04-01` | UT | `tests/unit/p0_claim_evidence_map.py` | Dev | PASS |
+| `F-P0-04-01` | `AC-P0-04-02` | `TC-P0-04-02` | Risk | `tests/risk/p0_reject_no_evidence.md` | QA | PASS |
+| `F-P0-04-02` | `AC-P0-04-03` | `TC-P0-04-03` | IT | `tests/integration/p0_leakage_check.md` | QA | PASS |
+| `F-P0-04-02` | `AC-P0-04-04` | `TC-P0-04-04` | IT | `tests/integration/p0_metric_consistency.md` | QA | PASS |
 | `F-P0-05-01` | `AC-P0-05-01` | `TC-P0-05-01` | UT | `tests/unit/p0_metric_pearson_rmse.py` | Dev | TBD |
 | `F-P0-05-01` | `AC-P0-05-02` | `TC-P0-05-02` | IT | `tests/integration/p0_metric_aggregation.md` | QA | TBD |
 | `F-P0-05-02` | `AC-P0-05-03` | `TC-P0-05-03` | IT | `tests/integration/p0_top1_regret.md` | Dev+QA | TBD |

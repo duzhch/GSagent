@@ -1,6 +1,7 @@
 """Agent-facing report generation service."""
 
 from animal_gs_agent.schemas.jobs import JobReportResponse, JobStatusResponse
+from animal_gs_agent.services.audit_service import build_claim_evidence_map, run_audit_checks
 
 
 def build_job_report(job: JobStatusResponse) -> JobReportResponse:
@@ -26,10 +27,15 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
         f"Top candidates preview: {top_preview}."
     )
 
+    claim_evidence_map = build_claim_evidence_map(job)
+    audit_checks = run_audit_checks(job)
+
     return JobReportResponse(
         job_id=job.job_id,
         trait_name=job.trait_name,
         status=job.status,
         report_text=report_text,
         top_candidates=job.workflow_summary.top_candidates,
+        claim_evidence_map=claim_evidence_map,
+        audit_checks=audit_checks,
     )

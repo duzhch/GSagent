@@ -115,6 +115,14 @@ QC governance notes:
   - `within_pop` split and metrics (`within_pop_pearson`, `within_pop_rmse`)
   - `cross_pop` split and metrics (`cross_pop_pearson`, `cross_pop_rmse`)
   - validation protocol result is attached to job state as `validation_protocol_plan`
+- Audit claim-evidence mapping now supports report-time claim validation:
+  - each claim carries explicit evidence links
+  - claims with missing evidence are marked `reject`
+  - report payload includes `claim_evidence_map`
+- Audit checks now emit structured verdicts:
+  - `leakage_check` with `pass|risk`
+  - `metric_consistency_check` with `pass|risk`
+  - report payload includes `audit_checks`
 
 ## 2.5 Slurm Awareness
 
