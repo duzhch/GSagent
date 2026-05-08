@@ -123,6 +123,9 @@ QC governance notes:
   - `leakage_check` with `pass|risk`
   - `metric_consistency_check` with `pass|risk`
   - report payload includes `audit_checks`
+- Metric service now provides:
+  - trial-level `Pearson` and `RMSE`
+  - grouped aggregate metrics by `(population, trait, model)`
 
 ## 2.5 Slurm Awareness
 

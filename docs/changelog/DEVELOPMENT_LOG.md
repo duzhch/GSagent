@@ -561,3 +561,19 @@
 - Updated delivery docs/matrix:
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-04-03=PASS`, `AC-P0-04-04=PASS`)
+
+### Session 28
+
+- Started `E-P0-05` metric unification slice (`F-P0-05-01`):
+  - added metric schemas:
+    - `src/animal_gs_agent/schemas/metric.py`
+  - added metric service:
+    - `src/animal_gs_agent/services/metric_service.py`
+  - capabilities:
+    - trial-level `Pearson` and `RMSE`
+    - grouped aggregate metrics by `(population, trait, model)`
+- Added tests:
+  - `tests/unit/p0_metric_pearson_rmse.py`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-05-01=PASS`)
