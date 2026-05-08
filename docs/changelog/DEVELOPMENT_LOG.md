@@ -795,3 +795,35 @@
     - `AC-P2-01-01=PASS`
     - `AC-P2-01-02=PASS`
     - `AC-P2-01-03=PASS`
+
+### Session 37
+
+- Implemented `E-P2-03` platform governance baseline:
+  - `F-P2-03-01` scope authorization
+  - `F-P2-03-02` quota gate
+  - `F-P2-03-03` observability audit endpoint
+- Added schemas/services:
+  - `src/animal_gs_agent/schemas/governance.py`
+  - `src/animal_gs_agent/services/governance_service.py`
+- Extended job request/status metadata:
+  - `requested_by`
+  - `project_scope`
+  - `access_scopes`
+- API/flow integration:
+  - `POST /jobs` now enforces:
+    - scope check (`403 authz_scope_denied`)
+    - quota check (`429 project_quota_exceeded`)
+  - added governance audit API:
+    - `GET /jobs/{job_id}/governance/audit`
+- Added tests:
+  - `tests/unit/api/test_governance_controls.py`
+- Added evidence docs:
+  - `tests/integration/p2_authz_scope.md`
+  - `tests/integration/p2_quota_control.md`
+  - `tests/e2e/p2_observability_audit.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md`
+    - `AC-P2-03-01=PASS`
+    - `AC-P2-03-02=PASS`
+    - `AC-P2-03-03=PASS`

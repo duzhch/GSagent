@@ -23,6 +23,7 @@ from animal_gs_agent.services.trial_orchestrator_service import build_trial_plan
 from animal_gs_agent.services.validation_protocol_service import build_validation_protocol_plan
 from animal_gs_agent.services.badcase_service import build_badcase_advice
 from animal_gs_agent.services.debug_service import build_debug_diagnosis
+from animal_gs_agent.services.governance_service import is_scope_authorized, quota_allows_new_job
 
 jobs_store: dict[str, JobStatusResponse] = {}
 
@@ -261,6 +262,15 @@ def create_job(
     dataset_profile: DatasetProfile,
 ) -> JobSubmissionResponse:
     _load_store_if_needed()
+    if not is_scope_authorized(project_scope=payload.project_scope, access_scopes=payload.access_scopes):
+        raise ValueError("authz_scope_denied")
+    quota_max = _int_env("ANIMAL_GS_AGENT_PROJECT_QUOTA_MAX_ACTIVE", 0)
+    if not quota_allows_new_job(
+        project_scope=payload.project_scope,
+        quota_max_active=quota_max,
+        jobs=list(jobs_store.values()),
+    ):
+        raise ValueError("project_quota_exceeded")
     historical_jobs = [job for job in jobs_store.values() if job.status in {"completed", "failed"}]
     model_pool_plan = build_model_pool_plan(task_understanding, dataset_profile)
     trial_strategy_plan = build_trial_plan(
@@ -282,6 +292,9 @@ def create_job(
         job_id=uuid4().hex[:8],
         status="queued",
         trait_name=payload.trait_name,
+        requested_by=payload.requested_by,
+        project_scope=payload.project_scope,
+        access_scopes=payload.access_scopes,
         task_understanding=task_understanding,
         dataset_profile=dataset_profile,
         model_pool_plan=model_pool_plan,

@@ -21,8 +21,10 @@ from animal_gs_agent.schemas.jobs import (
     JobSubmissionRequest,
     JobSubmissionResponse,
 )
+from animal_gs_agent.schemas.governance import GovernanceAuditResponse
 from animal_gs_agent.services.artifact_service import list_artifacts
 from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
+from animal_gs_agent.services.governance_service import build_governance_audit
 from animal_gs_agent.services.job_service import (
     create_job,
     get_job,
@@ -61,11 +63,19 @@ def create_jobs_router() -> APIRouter:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 
         dataset_profile = build_dataset_profile(payload)
-        return create_job(
-            payload,
-            task_understanding=task_understanding,
-            dataset_profile=dataset_profile,
-        )
+        try:
+            return create_job(
+                payload,
+                task_understanding=task_understanding,
+                dataset_profile=dataset_profile,
+            )
+        except ValueError as exc:
+            detail = str(exc)
+            if detail == "authz_scope_denied":
+                raise HTTPException(status_code=403, detail=detail) from exc
+            if detail == "project_quota_exceeded":
+                raise HTTPException(status_code=429, detail=detail) from exc
+            raise HTTPException(status_code=409, detail=detail) from exc
 
     @router.get("/jobs/{job_id}", response_model=JobStatusResponse, response_model_exclude_none=True)
     def get_job_status(job_id: str) -> JobStatusResponse:
@@ -193,5 +203,12 @@ def create_jobs_router() -> APIRouter:
             artifact_count=len(artifacts),
             artifacts=artifacts,
         )
+
+    @router.get("/jobs/{job_id}/governance/audit", response_model=GovernanceAuditResponse)
+    def get_job_governance_audit(job_id: str) -> GovernanceAuditResponse:
+        job = get_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        return build_governance_audit(job)
 
     return router

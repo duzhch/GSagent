@@ -21,6 +21,9 @@ class JobSubmissionRequest(BaseModel):
     trait_name: str
     phenotype_path: str
     genotype_path: str
+    requested_by: str = "system_user"
+    project_scope: str = "default"
+    access_scopes: list[str] = Field(default_factory=lambda: ["default"])
 
 
 class JobEscalationResolutionRequest(BaseModel):
@@ -102,6 +105,9 @@ class JobSubmissionResponse(BaseModel):
     job_id: str
     status: Literal["queued", "running", "completed", "failed"]
     trait_name: str
+    requested_by: str = "system_user"
+    project_scope: str = "default"
+    access_scopes: list[str] = Field(default_factory=list)
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
     model_pool_plan: ModelPoolPlan | None = None
@@ -135,6 +141,9 @@ class JobStatusResponse(BaseModel):
     job_id: str
     status: Literal["queued", "running", "completed", "failed"]
     trait_name: str
+    requested_by: str = "system_user"
+    project_scope: str = "default"
+    access_scopes: list[str] = Field(default_factory=list)
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
     model_pool_plan: ModelPoolPlan | None = None

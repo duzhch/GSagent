@@ -183,6 +183,15 @@ QC governance notes:
   - ablation result list with delta metrics and impact labels
   - plot-ready export artifact:
     - `benchmark_plot_artifact` (`csv`)
+- Platform governance controls now include:
+  - submission-time authz scope check:
+    - `project_scope` must be present in `access_scopes`
+  - project active-job quota gate:
+    - env `ANIMAL_GS_AGENT_PROJECT_QUOTA_MAX_ACTIVE`
+    - rejects submit when scope-level active jobs exceed quota
+  - governance observability endpoint:
+    - `GET /jobs/{job_id}/governance/audit`
+    - outputs event/decision counters and escalation visibility
 
 ## 2.5 Slurm Awareness
 

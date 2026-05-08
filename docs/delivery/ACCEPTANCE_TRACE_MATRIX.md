@@ -76,9 +76,9 @@
 | `F-P2-02-01` | `AC-P2-02-01` | `TC-P2-02-01` | UT | `tests/unit/p2_failure_classifier.py` | Dev | PASS |
 | `F-P2-02-02` | `AC-P2-02-02` | `TC-P2-02-02` | IT | `tests/integration/p2_retry_policy.md` | QA | PASS |
 | `F-P2-02-03` | `AC-P2-02-03` | `TC-P2-02-03` | Risk | `tests/risk/p2_escalation_stop.md` | QA | PASS |
-| `F-P2-03-01` | `AC-P2-03-01` | `TC-P2-03-01` | IT | `tests/integration/p2_authz_scope.md` | Dev+QA | TBD |
-| `F-P2-03-02` | `AC-P2-03-02` | `TC-P2-03-02` | IT | `tests/integration/p2_quota_control.md` | QA | TBD |
-| `F-P2-03-03` | `AC-P2-03-03` | `TC-P2-03-03` | E2E | `tests/e2e/p2_observability_audit.md` | QA | TBD |
+| `F-P2-03-01` | `AC-P2-03-01` | `TC-P2-03-01` | IT | `tests/integration/p2_authz_scope.md` | Dev+QA | PASS |
+| `F-P2-03-02` | `AC-P2-03-02` | `TC-P2-03-02` | IT | `tests/integration/p2_quota_control.md` | QA | PASS |
+| `F-P2-03-03` | `AC-P2-03-03` | `TC-P2-03-03` | E2E | `tests/e2e/p2_observability_audit.md` | QA | PASS |
 
 ## 5. 更新规则
 
