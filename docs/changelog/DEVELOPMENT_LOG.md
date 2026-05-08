@@ -364,3 +364,26 @@
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-02-01=PASS`, `AC-P0-02-02/03=IN_PROGRESS`)
 - Verified full unit suite with `71 passed`.
+
+### Session 19
+
+- Continued `E-P0-02` with population-structure diagnostics (`F-P0-02-02` slice):
+  - added `population_structure` summary in dataset profile
+  - added `risk_tags` propagation for structure outliers and high relatedness
+  - supported optional PLINK2 inputs:
+    - `ANIMAL_GS_AGENT_PLINK2_PCA_EIGENVEC_PATH`
+    - `ANIMAL_GS_AGENT_PLINK2_RELATEDNESS_PATH`
+  - added thresholds:
+    - `ANIMAL_GS_AGENT_QC_PCA_ZSCORE_THRESHOLD`
+    - `ANIMAL_GS_AGENT_QC_RELATEDNESS_HIGH_THRESHOLD`
+- Improved report explainability:
+  - report text now includes active risk tags to distinguish governance decisions from workflow execution.
+- Added tests and evidence:
+  - `tests/unit/services/test_dataset_profile_service.py` (population structure parsing)
+  - `tests/unit/api/test_job_run.py` (risk-tag carry-through into execution stage)
+  - `tests/unit/api/test_job_report.py` (risk tags in report text)
+  - `tests/integration/p0_population_structure.md`
+  - `tests/risk/p0_structure_risk_tag.md`
+- Updated trace matrix:
+  - `AC-P0-02-04` -> `IN_PROGRESS`
+  - `AC-P0-02-05` -> `IN_PROGRESS`

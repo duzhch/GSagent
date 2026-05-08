@@ -12,10 +12,12 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
         f"{item.rank}:{item.individual_id}({item.gebv:.4f})"
         for item in job.workflow_summary.top_candidates[:5]
     ) or "no candidates"
+    risk_tags = job.dataset_profile.risk_tags
+    risk_text = ", ".join(risk_tags) if risk_tags else "none"
 
     report_text = (
         f"Agent layer: interpreted trait `{job.trait_name}`, extracted fixed effects [{fixed_effects}], "
-        "and validated dataset structure before execution.\n"
+        f"and validated dataset structure before execution (risk tags: {risk_text}).\n"
         f"Workflow layer: executed `{job.workflow_backend}` and produced ranked GEBV outputs from fixed GS pipeline.\n"
         f"Top candidates preview: {top_preview}."
     )

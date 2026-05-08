@@ -27,8 +27,8 @@
 | `F-P0-02-01` | `AC-P0-02-01` | `TC-P0-02-01` | UT | `tests/unit/p0_qc_missingness_test.py` | Dev | PASS |
 | `F-P0-02-01` | `AC-P0-02-02` | `TC-P0-02-02` | E2E | `tests/e2e/p0_qc_blocking.md` | QA | IN_PROGRESS |
 | `F-P0-02-01` | `AC-P0-02-03` | `TC-P0-02-03` | Risk | `tests/risk/p0_override_audit.md` | QA | IN_PROGRESS |
-| `F-P0-02-02` | `AC-P0-02-04` | `TC-P0-02-04` | IT | `tests/integration/p0_population_structure.md` | Dev+QA | TBD |
-| `F-P0-02-02` | `AC-P0-02-05` | `TC-P0-02-05` | Risk | `tests/risk/p0_structure_risk_tag.md` | QA | TBD |
+| `F-P0-02-02` | `AC-P0-02-04` | `TC-P0-02-04` | IT | `tests/integration/p0_population_structure.md` | Dev+QA | IN_PROGRESS |
+| `F-P0-02-02` | `AC-P0-02-05` | `TC-P0-02-05` | Risk | `tests/risk/p0_structure_risk_tag.md` | QA | IN_PROGRESS |
 | `F-P0-02-03` | `AC-P0-02-06` | `TC-P0-02-06` | IT | `tests/integration/p0_pheno_batch_diagnosis.md` | Dev+QA | TBD |
 | `F-P0-02-03` | `AC-P0-02-07` | `TC-P0-02-07` | E2E | `tests/e2e/p0_covariate_recommendation.md` | QA | TBD |
 | `F-P0-03-01` | `AC-P0-03-01` | `TC-P0-03-01` | UT | `tests/unit/p0_model_pool_availability.py` | Dev | TBD |

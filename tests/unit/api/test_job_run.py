@@ -261,3 +261,68 @@ def test_run_job_blocks_before_workflow_when_qc_risk_is_high(monkeypatch, tmp_pa
     assert body["status"] == "failed"
     assert body["execution_error"] == "qc_risk_high_blocked"
     assert body["events"][-1]["error_code"] == "qc_risk_high_blocked"
+
+
+def test_run_job_carries_population_risk_tags_into_execution_stage(monkeypatch, tmp_path) -> None:
+    _patch_llm(monkeypatch)
+
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text("animal_id,daily_gain\nA1,1.2\n", encoding="utf-8")
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    eigenvec = tmp_path / "plink.eigenvec"
+    eigenvec.write_text(
+        "\n".join(
+            [
+                "#FID IID PC1 PC2",
+                "F1 A1 0.10 0.10",
+                "F1 A2 0.20 0.20",
+                "F1 A3 5.00 5.00",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PLINK2_PCA_EIGENVEC_PATH", str(eigenvec))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_QC_PCA_ZSCORE_THRESHOLD", "1.0")
+
+    def fake_execute_workflow(job):
+        return WorkflowExecutionResult(
+            backend="native_nextflow",
+            command=["nextflow", "run", "main.nf"],
+            result_dir=f"/tmp/{job.job_id}",
+        )
+
+    monkeypatch.setattr(
+        "animal_gs_agent.api.routes.jobs.execute_fixed_workflow",
+        fake_execute_workflow,
+    )
+    monkeypatch.setattr(
+        "animal_gs_agent.api.routes.jobs.parse_workflow_outputs",
+        lambda result_dir, trait_name, top_n=10: WorkflowSummary(
+            trait_name=trait_name,
+            total_candidates=1,
+            top_candidates=[RankedCandidate(individual_id="A1", gebv=1.2, rank=1)],
+            model_metrics={},
+            source_files=[],
+        ),
+    )
+
+    client = TestClient(create_app())
+    submit_response = client.post(
+        "/jobs",
+        json={
+            "user_message": "Run genomic selection for daily_gain",
+            "trait_name": "daily_gain",
+            "phenotype_path": str(phenotype_file),
+            "genotype_path": str(genotype_file),
+        },
+    )
+    job_id = submit_response.json()["job_id"]
+    run_response = client.post(f"/jobs/{job_id}/run")
+    body = run_response.json()
+
+    assert run_response.status_code == 200
+    assert body["status"] == "completed"
+    assert "population_structure_outliers" in body["dataset_profile"]["risk_tags"]

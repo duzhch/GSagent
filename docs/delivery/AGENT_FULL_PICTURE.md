@@ -83,10 +83,20 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - optional PLINK2 missingness reports via env paths:
     - `ANIMAL_GS_AGENT_PLINK2_SMISS_PATH`
     - `ANIMAL_GS_AGENT_PLINK2_VMISS_PATH`
+  - optional population-structure files via env paths:
+    - `ANIMAL_GS_AGENT_PLINK2_PCA_EIGENVEC_PATH`
+    - `ANIMAL_GS_AGENT_PLINK2_RELATEDNESS_PATH`
 - Execution policy:
   - `local`: force native local execution
   - `slurm`: force Slurm submission
   - `auto`: login-node aware decision
+
+QC governance notes:
+- Missingness high-risk gate can block execution with `qc_risk_high_blocked`.
+- Population-structure diagnostics produce `risk_tags` such as:
+  - `population_structure_outliers`
+  - `population_relatedness_high`
+- Risk tags are carried through run/report layers for model-stage awareness.
 
 ## 2.5 Slurm Awareness
 

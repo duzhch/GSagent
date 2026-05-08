@@ -182,3 +182,88 @@ def test_build_dataset_profile_marks_high_risk_when_missingness_exceeds_threshol
     assert profile.genotype_missingness is not None
     assert profile.qc_risk_level == "high"
     assert "qc_risk_high" in profile.validation_flags
+
+
+def test_build_dataset_profile_parses_population_structure_and_outliers(monkeypatch, tmp_path) -> None:
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text("animal_id,daily_gain\nA1,1.2\n", encoding="utf-8")
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    eigenvec = tmp_path / "plink.eigenvec"
+    eigenvec.write_text(
+        "\n".join(
+            [
+                "#FID IID PC1 PC2",
+                "F1 A1 0.10 0.10",
+                "F1 A2 0.20 0.20",
+                "F1 A3 5.00 5.00",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    relatedness = tmp_path / "plink.genome"
+    relatedness.write_text(
+        "\n".join(
+            [
+                "FID1 IID1 FID2 IID2 PI_HAT",
+                "F1 A1 F1 A2 0.10",
+                "F1 A2 F1 A3 0.35",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PLINK2_PCA_EIGENVEC_PATH", str(eigenvec))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PLINK2_RELATEDNESS_PATH", str(relatedness))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_QC_PCA_ZSCORE_THRESHOLD", "1.0")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_QC_RELATEDNESS_HIGH_THRESHOLD", "0.25")
+
+    payload = JobSubmissionRequest(
+        user_message="Run genomic selection for daily_gain",
+        trait_name="daily_gain",
+        phenotype_path=str(phenotype_file),
+        genotype_path=str(genotype_file),
+    )
+    profile = build_dataset_profile(payload)
+
+    assert profile.population_structure is not None
+    assert profile.population_structure.sample_count == 3
+    assert "A3" in profile.population_structure.outlier_samples
+    assert profile.population_structure.high_relatedness_pair_count == 1
+    assert "population_structure_outliers" in profile.risk_tags
+    assert "population_relatedness_high" in profile.risk_tags
+
+
+def test_build_dataset_profile_handles_headerless_eigenvec(monkeypatch, tmp_path) -> None:
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text("animal_id,daily_gain\nA1,1.2\n", encoding="utf-8")
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    eigenvec = tmp_path / "plink.eigenvec"
+    eigenvec.write_text(
+        "\n".join(
+            [
+                "F1 A1 0.10 0.10",
+                "F1 A2 0.20 0.20",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PLINK2_PCA_EIGENVEC_PATH", str(eigenvec))
+
+    payload = JobSubmissionRequest(
+        user_message="Run genomic selection for daily_gain",
+        trait_name="daily_gain",
+        phenotype_path=str(phenotype_file),
+        genotype_path=str(genotype_file),
+    )
+    profile = build_dataset_profile(payload)
+
+    assert profile.population_structure is not None
+    assert profile.population_structure.sample_count == 2
+    assert profile.population_structure.pc_columns == ["PC1", "PC2"]

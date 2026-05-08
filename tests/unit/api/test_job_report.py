@@ -108,3 +108,67 @@ def test_job_report_returns_409_for_unfinished_job(monkeypatch, tmp_path) -> Non
 
     report_resp = client.get(f"/jobs/{job_id}/report")
     assert report_resp.status_code == 409
+
+
+def test_job_report_includes_population_risk_tags(monkeypatch, tmp_path) -> None:
+    _patch_llm(monkeypatch)
+
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text("animal_id,daily_gain,sex\nA1,1.2,M\n", encoding="utf-8")
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    eigenvec = tmp_path / "plink.eigenvec"
+    eigenvec.write_text(
+        "\n".join(
+            [
+                "#FID IID PC1 PC2",
+                "F1 A1 0.10 0.10",
+                "F1 A2 0.20 0.20",
+                "F1 A3 5.00 5.00",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PLINK2_PCA_EIGENVEC_PATH", str(eigenvec))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_QC_PCA_ZSCORE_THRESHOLD", "1.0")
+
+    def fake_execute_workflow(job):
+        return WorkflowExecutionResult(
+            backend="native_nextflow",
+            command=["nextflow", "run", "main.nf"],
+            result_dir=f"/tmp/{job.job_id}",
+        )
+
+    def fake_parse_outputs(result_dir, trait_name, top_n=10):
+        return WorkflowSummary(
+            trait_name=trait_name,
+            total_candidates=10,
+            top_candidates=[RankedCandidate(individual_id="A1001", gebv=1.2345, rank=1)],
+            model_metrics={},
+            source_files=["gblup/gebv_predictions.csv"],
+        )
+
+    monkeypatch.setattr("animal_gs_agent.api.routes.jobs.execute_fixed_workflow", fake_execute_workflow)
+    monkeypatch.setattr("animal_gs_agent.api.routes.jobs.parse_workflow_outputs", fake_parse_outputs)
+
+    client = TestClient(create_app())
+    submit = client.post(
+        "/jobs",
+        json={
+            "user_message": "Run genomic selection for daily_gain",
+            "trait_name": "daily_gain",
+            "phenotype_path": str(phenotype_file),
+            "genotype_path": str(genotype_file),
+        },
+    )
+    job_id = submit.json()["job_id"]
+
+    run_resp = client.post(f"/jobs/{job_id}/run")
+    assert run_resp.status_code == 200
+    assert run_resp.json()["status"] == "completed"
+
+    report_resp = client.get(f"/jobs/{job_id}/report")
+    assert report_resp.status_code == 200
+    assert "population_structure_outliers" in report_resp.json()["report_text"]

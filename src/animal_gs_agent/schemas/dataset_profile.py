@@ -21,6 +21,19 @@ class GenotypeMissingnessSummary(BaseModel):
     vmiss_path: str | None = None
 
 
+class PopulationStructureSummary(BaseModel):
+    sample_count: int = Field(ge=0)
+    pc_columns: list[str] = Field(default_factory=list)
+    outlier_samples: list[str] = Field(default_factory=list)
+    max_abs_zscore: float = Field(ge=0.0)
+    pca_zscore_threshold: float = Field(ge=0.0)
+    high_relatedness_pair_count: int = Field(ge=0)
+    relatedness_threshold: float = Field(ge=0.0, le=1.0)
+    related_pairs_preview: list[str] = Field(default_factory=list)
+    pca_source_path: str | None = None
+    relatedness_source_path: str | None = None
+
+
 class DatasetProfile(BaseModel):
     phenotype_path: str
     genotype_path: str
@@ -31,4 +44,6 @@ class DatasetProfile(BaseModel):
     trait_column_present: bool | None = None
     genotype_missingness: GenotypeMissingnessSummary | None = None
     qc_risk_level: str | None = None
+    population_structure: PopulationStructureSummary | None = None
+    risk_tags: list[str] = Field(default_factory=list)
     validation_flags: list[str] = Field(default_factory=list)
