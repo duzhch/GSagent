@@ -287,3 +287,26 @@
   - `tests/integration/p0_supervisor_flow.md`
   - `tests/e2e/p0_trace_visibility.md`
 - Verified full unit suite in `llm_gblup` environment with `58 passed`.
+
+### Session 15
+
+- Added human-approval escalation resolution API for practical governance closure:
+  - `POST /jobs/{job_id}/escalation/retry`
+  - `POST /jobs/{job_id}/escalation/abort`
+- Extended job state contract for escalation resolution audit:
+  - `escalation_resolution`
+  - `escalation_resolved_by`
+  - `escalation_resolved_at`
+- Implemented escalation resolution behaviors:
+  - retry approval clears escalation and re-queues job (auto enqueue in async mode)
+  - abort approval marks job failed with `manual_abort_after_escalation`
+  - both actions append explicit decision-trace override nodes
+- Added unit API coverage:
+  - `tests/unit/api/test_job_escalation.py`
+- Added acceptance evidence docs for P1 human-gate items:
+  - `tests/risk/p1_approval_gate.md`
+  - `tests/integration/p1_override_log.md`
+- Updated acceptance trace matrix:
+  - `F-P1-04-01 / AC-P1-04-01` -> `IN_PROGRESS`
+  - `F-P1-04-02 / AC-P1-04-02` -> `IN_PROGRESS`
+- Verified full unit suite in `llm_gblup` environment with `61 passed`.

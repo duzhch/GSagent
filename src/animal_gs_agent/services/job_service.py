@@ -305,6 +305,9 @@ def mark_job_escalated(job_id: str, reason: str, *, evidence: list[str] | None =
             "escalation_required": True,
             "escalation_reason": reason,
             "escalation_requested_at": now,
+            "escalation_resolution": None,
+            "escalation_resolved_by": None,
+            "escalation_resolved_at": None,
             "execution_error": "worker_retry_budget_exhausted",
             "execution_error_detail": f"manual escalation required: {reason}",
             "events": _append_event(
@@ -331,6 +334,95 @@ def mark_job_escalated(job_id: str, reason: str, *, evidence: list[str] | None =
     jobs_store[job_id] = escalated
     _persist_store_if_needed()
     return escalated
+
+
+def resolve_job_escalation_retry(job_id: str, approver: str, reason: str) -> JobStatusResponse | None:
+    _load_store_if_needed()
+    job = jobs_store.get(job_id)
+    if job is None:
+        return None
+    if not job.escalation_required:
+        raise ValueError(f"Job {job_id} is not waiting for escalation resolution")
+
+    now = _now_iso()
+    updated = job.model_copy(
+        update={
+            "status": "queued",
+            "escalation_required": False,
+            "escalation_reason": None,
+            "escalation_resolution": "retry",
+            "escalation_resolved_by": approver,
+            "escalation_resolved_at": now,
+            "execution_error": None,
+            "execution_error_detail": None,
+            "events": _append_event(
+                job,
+                phase="queued",
+                message=f"escalation approved for retry by {approver}",
+            ),
+            "decision_trace": _append_decision(
+                job,
+                decision_id="manual_escalation_retry_approved",
+                action="approve_escalation_retry",
+                rationale=f"human approver requested retry: {reason}",
+                status="success",
+                duration_ms=60,
+                confidence=0.99,
+                evidence=[f"approver={approver}", f"reason={reason}"],
+                output_summary="job re-queued after escalation review",
+                feature_id="F-P1-04-01",
+                story_id="S-P1-04-01",
+            ),
+        }
+    )
+    jobs_store[job_id] = updated
+    _persist_store_if_needed()
+    return updated
+
+
+def resolve_job_escalation_abort(job_id: str, approver: str, reason: str) -> JobStatusResponse | None:
+    _load_store_if_needed()
+    job = jobs_store.get(job_id)
+    if job is None:
+        return None
+    if not job.escalation_required:
+        raise ValueError(f"Job {job_id} is not waiting for escalation resolution")
+
+    now = _now_iso()
+    updated = job.model_copy(
+        update={
+            "status": "failed",
+            "escalation_required": False,
+            "escalation_reason": None,
+            "escalation_resolution": "abort",
+            "escalation_resolved_by": approver,
+            "escalation_resolved_at": now,
+            "execution_error": "manual_abort_after_escalation",
+            "execution_error_detail": f"aborted by {approver}: {reason}",
+            "events": _append_event(
+                job,
+                phase="failed",
+                message=f"escalation resolved as abort by {approver}",
+                error_code="manual_abort_after_escalation",
+            ),
+            "decision_trace": _append_decision(
+                job,
+                decision_id="manual_escalation_abort_approved",
+                action="approve_escalation_abort",
+                rationale=f"human approver terminated run: {reason}",
+                status="success",
+                duration_ms=55,
+                confidence=0.99,
+                evidence=[f"approver={approver}", f"reason={reason}"],
+                output_summary="job marked failed by escalation abort",
+                feature_id="F-P1-04-01",
+                story_id="S-P1-04-01",
+            ),
+        }
+    )
+    jobs_store[job_id] = updated
+    _persist_store_if_needed()
+    return updated
 
 
 def refresh_running_job(

@@ -15,6 +15,11 @@ class JobSubmissionRequest(BaseModel):
     genotype_path: str
 
 
+class JobEscalationResolutionRequest(BaseModel):
+    approver: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+
+
 class RankedCandidate(BaseModel):
     individual_id: str
     gebv: float
@@ -80,6 +85,9 @@ class JobSubmissionResponse(BaseModel):
     escalation_required: bool = False
     escalation_reason: str | None = None
     escalation_requested_at: str | None = None
+    escalation_resolution: Literal["retry", "abort"] | None = None
+    escalation_resolved_by: str | None = None
+    escalation_resolved_at: str | None = None
     workflow_summary: WorkflowSummary | None = None
     events: list[JobEvent] = Field(default_factory=list)
     decision_trace: list[DecisionTraceNode] = Field(default_factory=list)
@@ -100,6 +108,9 @@ class JobStatusResponse(BaseModel):
     escalation_required: bool = False
     escalation_reason: str | None = None
     escalation_requested_at: str | None = None
+    escalation_resolution: Literal["retry", "abort"] | None = None
+    escalation_resolved_by: str | None = None
+    escalation_resolved_at: str | None = None
     workflow_summary: WorkflowSummary | None = None
     events: list[JobEvent] = Field(default_factory=list)
     decision_trace: list[DecisionTraceNode] = Field(default_factory=list)

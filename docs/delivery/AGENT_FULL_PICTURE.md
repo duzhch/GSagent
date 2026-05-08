@@ -22,6 +22,8 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - `POST /jobs/{job_id}/run`
   - `GET /jobs/{job_id}`
   - `GET /jobs/{job_id}/trace`
+  - `POST /jobs/{job_id}/escalation/retry`
+  - `POST /jobs/{job_id}/escalation/abort`
   - `GET /jobs/{job_id}/report`
   - `GET /jobs/{job_id}/artifacts`
   - `GET /worker/health`
@@ -48,6 +50,10 @@ The agent is intentionally not a free-form bioinformatics command generator.
     - `escalation_required=true`
     - `escalation_reason=max_attempts_exceeded`
     - `escalation_requested_at=<utc timestamp>`
+  - escalation approval writes:
+    - `escalation_resolution=retry|abort`
+    - `escalation_resolved_by`
+    - `escalation_resolved_at`
 - Event timeline:
   - each state transition appends structured event entries
 - Decision trace timeline:
