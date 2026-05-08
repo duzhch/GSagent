@@ -43,6 +43,8 @@ class DecisionTraceNode(BaseModel):
     agent_id: str
     action: str
     rationale: str
+    status: Literal["success", "failed", "running"]
+    duration_ms: int = Field(ge=0)
     confidence: float = Field(ge=0.0, le=1.0)
     evidence: list[str] = Field(default_factory=list)
     input_summary: str | None = None

@@ -54,3 +54,5 @@ def test_decision_trace_is_initialized_with_required_fields(monkeypatch) -> None
     assert first.decision_id
     assert first.timestamp
     assert 0 <= first.confidence <= 1
+    assert first.status in {"success", "failed", "running"}
+    assert first.duration_ms is not None

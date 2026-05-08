@@ -56,6 +56,10 @@ def test_get_job_returns_submitted_job_status(monkeypatch) -> None:
         "genotype_not_found",
     ]
     assert body["events"][0]["phase"] == "queued"
+    assert len(body["decision_trace"]) >= 1
+    assert body["decision_trace"][0]["input_summary"]
+    assert body["decision_trace"][0]["output_summary"]
+    assert body["decision_trace"][0]["status"] in {"success", "failed", "running"}
 
 
 def test_get_job_refreshes_slurm_submitted_job_to_completed(monkeypatch, tmp_path) -> None:

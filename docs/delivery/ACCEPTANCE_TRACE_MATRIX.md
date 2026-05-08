@@ -19,11 +19,11 @@
 
 | Req ID | AC ID | Test Case ID | Test Type | Evidence | Owner | Coverage Status |
 |---|---|---|---|---|---|---|
-| `F-P0-01-01` | `AC-P0-01-01` | `TC-P0-01-01` | IT | `tests/integration/p0_supervisor_flow.md` | Dev+QA | TBD |
+| `F-P0-01-01` | `AC-P0-01-01` | `TC-P0-01-01` | IT | `tests/integration/p0_supervisor_flow.md` | Dev+QA | IN_PROGRESS |
 | `F-P0-01-01` | `AC-P0-01-02` | `TC-P0-01-02` | Risk | `tests/risk/p0_retry_escalation.md` | Dev+QA | IN_PROGRESS |
-| `F-P0-01-01` | `AC-P0-01-03` | `TC-P0-01-03` | E2E | `tests/e2e/p0_trace_visibility.md` | QA | TBD |
+| `F-P0-01-01` | `AC-P0-01-03` | `TC-P0-01-03` | E2E | `tests/e2e/p0_trace_visibility.md` | Dev+QA | IN_PROGRESS |
 | `F-P0-01-02` | `AC-P0-01-04` | `TC-P0-01-04` | UT | `tests/unit/p0_trace_schema_test.py` | Dev | PASS |
-| `F-P0-01-02` | `AC-P0-01-05` | `TC-P0-01-05` | IT | `tests/integration/p0_trace_linkage.md` | Dev+QA | IN_PROGRESS |
+| `F-P0-01-02` | `AC-P0-01-05` | `TC-P0-01-05` | IT | `tests/integration/p0_trace_linkage.md` | Dev+QA | PASS |
 | `F-P0-02-01` | `AC-P0-02-01` | `TC-P0-02-01` | UT | `tests/unit/p0_qc_missingness_test.py` | Dev | TBD |
 | `F-P0-02-01` | `AC-P0-02-02` | `TC-P0-02-02` | E2E | `tests/e2e/p0_qc_blocking.md` | QA | TBD |
 | `F-P0-02-01` | `AC-P0-02-03` | `TC-P0-02-03` | Risk | `tests/risk/p0_override_audit.md` | QA | TBD |

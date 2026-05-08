@@ -241,3 +241,26 @@
 - Updated trace matrix:
   - `AC-P0-01-02` -> `IN_PROGRESS` with linked evidence file
 - Verified full unit suite in `llm_gblup` environment with `57 passed`.
+
+### Session 13
+
+- Continued P0 bundled-acceptance preparation across multiple ACs:
+  - `AC-P0-01-01` supervisor flow evidence
+  - `AC-P0-01-03` trace visibility evidence
+  - `AC-P0-01-05` trace linkage closure
+- Strengthened decision-trace schema for visibility requirements:
+  - added node-level `status` and `duration_ms` fields
+  - propagated those fields through `/jobs/{id}` and `/jobs/{id}/trace` responses
+- Added and updated automated checks:
+  - updated `tests/unit/p0_trace_schema_test.py`
+  - updated `tests/unit/api/test_job_trace.py`
+  - updated `tests/unit/api/test_job_status.py`
+  - updated `tests/unit/api/test_job_run.py`
+- Added acceptance evidence files:
+  - `tests/integration/p0_supervisor_flow.md`
+  - `tests/e2e/p0_trace_visibility.md`
+- Updated trace matrix status:
+  - `AC-P0-01-01` -> `IN_PROGRESS`
+  - `AC-P0-01-03` -> `IN_PROGRESS`
+  - `AC-P0-01-05` -> `PASS`
+- Verified full unit suite in `llm_gblup` environment with `58 passed`.

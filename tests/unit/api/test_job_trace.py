@@ -49,6 +49,8 @@ def test_get_job_trace_returns_decision_nodes(monkeypatch) -> None:
     assert len(body["decision_trace"]) >= 1
     assert body["decision_trace"][0]["feature_id"] == "F-P0-01-02"
     assert body["decision_trace"][0]["action"] == "accept_job"
+    assert body["decision_trace"][0]["status"] in {"success", "failed", "running"}
+    assert body["decision_trace"][0]["duration_ms"] is not None
 
 
 def test_get_job_trace_returns_404_for_missing_job() -> None:

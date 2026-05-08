@@ -48,7 +48,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - each state transition appends structured event entries
 - Decision trace timeline:
   - each governance decision appends structured decision nodes
-  - includes `decision_id`, `feature_id`, `story_id`, `agent_id`, `action`, rationale, confidence, evidence
+  - includes `decision_id`, `feature_id`, `story_id`, `agent_id`, `action`, rationale, status, duration_ms, confidence, evidence
 
 ## 2.3 LLM Task Understanding
 

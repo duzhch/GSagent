@@ -79,6 +79,11 @@ def test_run_job_transitions_to_completed_for_valid_dataset(monkeypatch, tmp_pat
     assert body["workflow_backend"] == "native_nextflow"
     phases = [item["phase"] for item in body["events"]]
     assert phases == ["queued", "running", "completed"]
+    assert len(body["decision_trace"]) >= 3
+    assert body["decision_trace"][0]["action"] == "accept_job"
+    assert body["decision_trace"][-1]["action"] == "finalize_completed"
+    assert body["decision_trace"][-1]["status"] == "success"
+    assert body["decision_trace"][-1]["duration_ms"] is not None
 
 
 def test_run_job_transitions_to_failed_when_trait_missing(monkeypatch, tmp_path) -> None:
