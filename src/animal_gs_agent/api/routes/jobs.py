@@ -15,6 +15,7 @@ from animal_gs_agent.schemas.jobs import (
     JobArtifactsResponse,
     JobDecisionTraceResponse,
     JobEscalationResolutionRequest,
+    JobQCOverrideRequest,
     JobReportResponse,
     JobStatusResponse,
     JobSubmissionRequest,
@@ -28,6 +29,7 @@ from animal_gs_agent.services.job_service import (
     mark_job_queued_for_worker,
     resolve_job_escalation_abort,
     resolve_job_escalation_retry,
+    resolve_qc_block_override,
     refresh_running_job,
     run_job,
 )
@@ -140,6 +142,20 @@ def create_jobs_router() -> APIRouter:
     def abort_escalated_job(job_id: str, payload: JobEscalationResolutionRequest) -> JobStatusResponse:
         try:
             job = resolve_job_escalation_abort(job_id, approver=payload.approver, reason=payload.reason)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        return job
+
+    @router.post(
+        "/jobs/{job_id}/qc/override",
+        response_model=JobStatusResponse,
+        response_model_exclude_none=True,
+    )
+    def override_qc_block(job_id: str, payload: JobQCOverrideRequest) -> JobStatusResponse:
+        try:
+            job = resolve_qc_block_override(job_id, approver=payload.approver, reason=payload.reason)
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         if job is None:

@@ -425,6 +425,49 @@ def resolve_job_escalation_abort(job_id: str, approver: str, reason: str) -> Job
     return updated
 
 
+def resolve_qc_block_override(job_id: str, approver: str, reason: str) -> JobStatusResponse | None:
+    _load_store_if_needed()
+    job = jobs_store.get(job_id)
+    if job is None:
+        return None
+    if job.execution_error != "qc_risk_high_blocked":
+        raise ValueError(f"Job {job_id} is not waiting for qc override")
+
+    now = _now_iso()
+    updated = job.model_copy(
+        update={
+            "status": "queued",
+            "execution_error": None,
+            "execution_error_detail": None,
+            "qc_override_applied": True,
+            "qc_override_by": approver,
+            "qc_override_reason": reason,
+            "qc_override_at": now,
+            "events": _append_event(
+                job,
+                phase="queued",
+                message=f"qc override approved by {approver}",
+            ),
+            "decision_trace": _append_decision(
+                job,
+                decision_id="manual_qc_override_approved",
+                action="approve_qc_override",
+                rationale=f"human approver accepted high-qc-risk run: {reason}",
+                status="success",
+                duration_ms=45,
+                confidence=0.99,
+                evidence=[f"approver={approver}", f"reason={reason}"],
+                output_summary="qc block cleared, job re-queued",
+                feature_id="F-P0-02-01",
+                story_id="S-P0-02-05",
+            ),
+        }
+    )
+    jobs_store[job_id] = updated
+    _persist_store_if_needed()
+    return updated
+
+
 def refresh_running_job(
     job_id: str,
     slurm_state_checker=None,
@@ -598,30 +641,52 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
     jobs_store[job_id] = running_job
     _persist_store_if_needed()
 
-    first_error = next(iter(running_job.dataset_profile.validation_flags), None)
+    validation_flags = list(running_job.dataset_profile.validation_flags)
+    if running_job.qc_override_applied:
+        validation_flags = [flag for flag in validation_flags if flag != "qc_risk_high"]
+
+    first_error = next(iter(validation_flags), None)
     if first_error is not None:
+        error_code = first_error
+        error_detail = "dataset validation failed before workflow execution"
+        rationale = "dataset validation failed prior to workflow launch"
+        evidence = [f"validation_error={first_error}"]
+        feature_id = "F-P0-01-01"
+        story_id = "S-P0-01-02"
+        if first_error == "qc_risk_high":
+            error_code = "qc_risk_high_blocked"
+            error_detail = "qc risk gate blocked run; manual override required"
+            rationale = "qc risk exceeded configured threshold and no override was present"
+            evidence = [
+                f"qc_risk_level={running_job.dataset_profile.qc_risk_level}",
+                f"trait={running_job.trait_name}",
+            ]
+            feature_id = "F-P0-02-01"
+            story_id = "S-P0-02-05"
+
         failed_job = running_job.model_copy(
             update={
                 "status": "failed",
-                "execution_error": first_error,
-                "execution_error_detail": "dataset validation failed before workflow execution",
+                "execution_error": error_code,
+                "execution_error_detail": error_detail,
                 "events": _append_event(
                     running_job,
                     phase="failed",
                     message="dataset validation failed",
-                    error_code=first_error,
+                    error_code=error_code,
                 ),
                 "decision_trace": _append_decision(
                     running_job,
                     decision_id="preflight_dataset_failed",
                     action="block_execution",
-                    rationale="dataset validation failed prior to workflow launch",
+                    rationale=rationale,
                     status="failed",
                     duration_ms=25,
                     confidence=0.98,
-                    evidence=[f"validation_error={first_error}"],
+                    evidence=evidence,
                     output_summary="job status=failed",
-                    story_id="S-P0-01-02",
+                    feature_id=feature_id,
+                    story_id=story_id,
                 ),
             }
         )

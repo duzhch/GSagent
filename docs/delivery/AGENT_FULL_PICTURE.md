@@ -24,6 +24,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - `GET /jobs/{job_id}/trace`
   - `POST /jobs/{job_id}/escalation/retry`
   - `POST /jobs/{job_id}/escalation/abort`
+  - `POST /jobs/{job_id}/qc/override`
   - `GET /jobs/{job_id}/report`
   - `GET /jobs/{job_id}/artifacts`
   - `GET /worker/health`
@@ -46,6 +47,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
     - exhausted retry budget marks queue status as `dead` and escalates for manual intervention
 - Job lifecycle:
   - `queued -> running -> completed/failed`
+  - high QC risk pre-run gate can block execution before workflow dispatch
   - retry-budget exhaustion marks job with:
     - `escalation_required=true`
     - `escalation_reason=max_attempts_exceeded`
@@ -54,6 +56,11 @@ The agent is intentionally not a free-form bioinformatics command generator.
     - `escalation_resolution=retry|abort`
     - `escalation_resolved_by`
     - `escalation_resolved_at`
+  - QC override approval writes:
+    - `qc_override_applied=true`
+    - `qc_override_by`
+    - `qc_override_reason`
+    - `qc_override_at`
 - Event timeline:
   - each state transition appends structured event entries
 - Decision trace timeline:
@@ -73,6 +80,9 @@ The agent is intentionally not a free-form bioinformatics command generator.
 - Input contract:
   - phenotype structured file (CSV/TSV/TXT with trait column)
   - genotype format validation (VCF/BED/PGEN)
+  - optional PLINK2 missingness reports via env paths:
+    - `ANIMAL_GS_AGENT_PLINK2_SMISS_PATH`
+    - `ANIMAL_GS_AGENT_PLINK2_VMISS_PATH`
 - Execution policy:
   - `local`: force native local execution
   - `slurm`: force Slurm submission
@@ -104,6 +114,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
 - Human-readable detail: `execution_error_detail`
 - Typical categories:
   - input contract failures
+  - QC risk gate block (`qc_risk_high_blocked`)
   - workflow runtime errors
   - slurm submission errors
   - post-workflow parse errors

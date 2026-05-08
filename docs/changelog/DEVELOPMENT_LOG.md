@@ -341,3 +341,26 @@
   - updated matrix evidence/status for:
     - `AC-P0-01-01`, `AC-P0-01-02`, `AC-P0-01-03`
     - `AC-P1-04-01`, `AC-P1-04-02`
+
+### Session 18
+
+- Started `E-P0-02` practical deep-QC upgrade (`F-P0-02-01` slice):
+  - extended dataset profile with genotype missingness summary and QC risk level
+  - added PLINK2 missingness report parsing support (`.smiss/.vmiss`) through env paths
+  - added threshold-based high-risk flagging (`ANIMAL_GS_AGENT_QC_MISSINGNESS_HIGH_THRESHOLD`, default `0.10`)
+- Added pre-run QC risk gate behavior:
+  - high-risk jobs are blocked before workflow launch with `execution_error=qc_risk_high_blocked`
+  - decision trace records QC gate decision under `F-P0-02-01 / S-P0-02-05`
+- Added manual QC override API:
+  - `POST /jobs/{job_id}/qc/override`
+  - stores audit fields: `qc_override_applied`, `qc_override_by`, `qc_override_reason`, `qc_override_at`
+  - appends decision trace action `approve_qc_override`
+- Added tests and evidence artifacts:
+  - `tests/unit/p0_qc_missingness_test.py`
+  - `tests/unit/api/test_job_qc_override.py`
+  - `tests/e2e/p0_qc_blocking.md`
+  - `tests/risk/p0_override_audit.md`
+- Updated delivery docs and matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-02-01=PASS`, `AC-P0-02-02/03=IN_PROGRESS`)
+- Verified full unit suite with `71 passed`.
