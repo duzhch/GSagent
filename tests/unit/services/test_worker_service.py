@@ -1,7 +1,7 @@
 from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetProfile
 from animal_gs_agent.schemas.jobs import JobSubmissionRequest
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
-from animal_gs_agent.services.job_service import create_job, jobs_store
+from animal_gs_agent.services.job_service import create_job, get_job, jobs_store
 from animal_gs_agent.services.run_queue_service import enqueue_run_job, get_run_queue_record
 from animal_gs_agent.services.worker_service import get_worker_health_snapshot, process_next_queued_job
 
@@ -115,3 +115,9 @@ def test_process_next_queued_job_escalates_after_retry_budget(monkeypatch, tmp_p
     assert record is not None
     assert record["status"] == "dead"
     assert record["escalated"] is True
+
+    escalated_job = get_job(created.job_id)
+    assert escalated_job is not None
+    assert escalated_job.escalation_required is True
+    assert escalated_job.escalation_reason == "max_attempts_exceeded"
+    assert escalated_job.decision_trace[-1].action == "escalate_human_review"

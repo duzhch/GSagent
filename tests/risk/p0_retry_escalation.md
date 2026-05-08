@@ -12,6 +12,7 @@ Validate that worker failure handling does not perform unlimited blind retries:
 1. Failure under retry budget is requeued.
 2. Failure when retry budget is exhausted transitions to `dead`.
 3. `dead` queue records are marked as escalated for manual intervention.
+4. Job status is marked `escalation_required=true` with escalation reason and decision-trace node `escalate_human_review`.
 
 ## Automated Evidence
 
@@ -27,7 +28,7 @@ python -m pytest tests/unit/services/test_run_queue_service.py tests/unit/servic
 
 Observed result:
 
-- `8 passed`
+- `7 passed`
 
 ## Result
 

@@ -89,6 +89,33 @@ def _job_store_sqlite_path() -> Path | None:
     return Path(raw)
 
 
+def _trace_output_dir(job: JobStatusResponse) -> Path:
+    if job.workflow_result_dir and job.workflow_result_dir.strip():
+        return Path(job.workflow_result_dir)
+    root = Path(
+        os.getenv(
+            "ANIMAL_GS_AGENT_TRACE_OUTPUT_ROOT",
+            os.getenv(
+                "ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT",
+                "/work/home/zyqlab/dzhichao/Agent0428/animal_gs_agent/runs",
+            ),
+        )
+    )
+    return root / job.job_id
+
+
+def _persist_decision_trace_file(job: JobStatusResponse) -> None:
+    trace_dir = _trace_output_dir(job)
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    trace_path = trace_dir / "decision_trace.json"
+    payload = {
+        "job_id": job.job_id,
+        "status": job.status,
+        "decision_trace": [node.model_dump() for node in job.decision_trace],
+    }
+    trace_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def _sqlite_init(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(path) as conn:
@@ -179,13 +206,19 @@ def _persist_store_if_needed() -> None:
     sqlite_path = _job_store_sqlite_path()
     if sqlite_path is not None:
         _sqlite_persist(sqlite_path)
+        for job in jobs_store.values():
+            _persist_decision_trace_file(job)
         return
     path = _job_store_path()
     if path is None:
+        for job in jobs_store.values():
+            _persist_decision_trace_file(job)
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {job_id: job.model_dump() for job_id, job in jobs_store.items()}
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    for job in jobs_store.values():
+        _persist_decision_trace_file(job)
 
 
 def create_job(
@@ -249,12 +282,55 @@ def mark_job_queued_for_worker(job_id: str) -> JobStatusResponse | None:
             "status": "queued",
             "execution_error": None,
             "execution_error_detail": None,
+            "escalation_required": False,
+            "escalation_reason": None,
+            "escalation_requested_at": None,
             "events": _append_event(job, phase="queued", message="queued for async worker execution"),
         }
     )
     jobs_store[job_id] = updated
     _persist_store_if_needed()
     return updated
+
+
+def mark_job_escalated(job_id: str, reason: str, *, evidence: list[str] | None = None) -> JobStatusResponse | None:
+    _load_store_if_needed()
+    job = jobs_store.get(job_id)
+    if job is None:
+        return None
+    now = _now_iso()
+    escalated = job.model_copy(
+        update={
+            "status": "failed",
+            "escalation_required": True,
+            "escalation_reason": reason,
+            "escalation_requested_at": now,
+            "execution_error": "worker_retry_budget_exhausted",
+            "execution_error_detail": f"manual escalation required: {reason}",
+            "events": _append_event(
+                job,
+                phase="failed",
+                message="worker retry budget exhausted; escalation required",
+                error_code="worker_retry_budget_exhausted",
+            ),
+            "decision_trace": _append_decision(
+                job,
+                decision_id="worker_retry_budget_exhausted",
+                action="escalate_human_review",
+                rationale="automatic retries exceeded configured budget",
+                status="failed",
+                duration_ms=80,
+                confidence=0.99,
+                evidence=evidence or [],
+                output_summary="job escalated to manual review",
+                feature_id="F-P0-01-01",
+                story_id="S-P0-01-02",
+            ),
+        }
+    )
+    jobs_store[job_id] = escalated
+    _persist_store_if_needed()
+    return escalated
 
 
 def refresh_running_job(

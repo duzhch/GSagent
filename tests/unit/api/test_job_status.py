@@ -56,6 +56,7 @@ def test_get_job_returns_submitted_job_status(monkeypatch) -> None:
         "genotype_not_found",
     ]
     assert body["events"][0]["phase"] == "queued"
+    assert body["escalation_required"] is False
     assert len(body["decision_trace"]) >= 1
     assert body["decision_trace"][0]["input_summary"]
     assert body["decision_trace"][0]["output_summary"]

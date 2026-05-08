@@ -77,6 +77,9 @@ class JobSubmissionResponse(BaseModel):
     workflow_result_dir: str | None = None
     workflow_submission_id: str | None = None
     workflow_queue_state: str | None = None
+    escalation_required: bool = False
+    escalation_reason: str | None = None
+    escalation_requested_at: str | None = None
     workflow_summary: WorkflowSummary | None = None
     events: list[JobEvent] = Field(default_factory=list)
     decision_trace: list[DecisionTraceNode] = Field(default_factory=list)
@@ -94,6 +97,9 @@ class JobStatusResponse(BaseModel):
     workflow_result_dir: str | None = None
     workflow_submission_id: str | None = None
     workflow_queue_state: str | None = None
+    escalation_required: bool = False
+    escalation_reason: str | None = None
+    escalation_requested_at: str | None = None
     workflow_summary: WorkflowSummary | None = None
     events: list[JobEvent] = Field(default_factory=list)
     decision_trace: list[DecisionTraceNode] = Field(default_factory=list)

@@ -80,9 +80,10 @@ def test_job_artifacts_returns_workflow_outputs(monkeypatch, tmp_path) -> None:
 
     assert artifacts_resp.status_code == 200
     assert body["job_id"] == job_id
-    assert body["artifact_count"] == 2
-    assert body["artifacts"][0]["relative_path"] == "gblup/gebv_predictions.csv"
-    assert body["artifacts"][1]["relative_path"] == "gblup/model_summary.txt"
+    assert body["artifact_count"] == 3
+    assert body["artifacts"][0]["relative_path"] == "decision_trace.json"
+    assert body["artifacts"][1]["relative_path"] == "gblup/gebv_predictions.csv"
+    assert body["artifacts"][2]["relative_path"] == "gblup/model_summary.txt"
 
 
 def test_job_artifacts_returns_409_for_unfinished_job(monkeypatch, tmp_path) -> None:

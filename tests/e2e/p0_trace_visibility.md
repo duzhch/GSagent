@@ -11,6 +11,7 @@ Validate trace visibility on job detail and trace endpoint:
 
 1. `GET /jobs/{job_id}` includes node input/output/status.
 2. `GET /jobs/{job_id}/trace` exposes structured node list with status and duration.
+3. Job detail includes escalation visibility fields (`escalation_required`, `escalation_reason`, `escalation_requested_at`).
 
 ## Automated Evidence
 

@@ -19,6 +19,7 @@ results/
 artifacts/
 tmp/
 logs/
+runs/
 *.log
 .DS_Store
 src/*.egg-info/

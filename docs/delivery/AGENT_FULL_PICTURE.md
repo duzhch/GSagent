@@ -44,11 +44,16 @@ The agent is intentionally not a free-form bioinformatics command generator.
     - exhausted retry budget marks queue status as `dead` and escalates for manual intervention
 - Job lifecycle:
   - `queued -> running -> completed/failed`
+  - retry-budget exhaustion marks job with:
+    - `escalation_required=true`
+    - `escalation_reason=max_attempts_exceeded`
+    - `escalation_requested_at=<utc timestamp>`
 - Event timeline:
   - each state transition appends structured event entries
 - Decision trace timeline:
   - each governance decision appends structured decision nodes
   - includes `decision_id`, `feature_id`, `story_id`, `agent_id`, `action`, rationale, status, duration_ms, confidence, evidence
+  - persisted to `decision_trace.json` under workflow result directory (or trace output root fallback)
 
 ## 2.3 LLM Task Understanding
 
@@ -84,6 +89,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - `gblup/model_summary.txt`
   - optional `gblup/accuracy_metrics.rds` via `Rscript`
 - Persist `workflow_summary` (top candidates + metrics)
+- Persist `decision_trace.json` for audit replay and artifact export
 - Report endpoint returns explicit Agent-vs-Workflow narrative
 
 ## 3. Error Model

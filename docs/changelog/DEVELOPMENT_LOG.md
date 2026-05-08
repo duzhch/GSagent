@@ -264,3 +264,26 @@
   - `AC-P0-01-03` -> `IN_PROGRESS`
   - `AC-P0-01-05` -> `PASS`
 - Verified full unit suite in `llm_gblup` environment with `58 passed`.
+
+### Session 14
+
+- Completed practical escalation visibility improvements for unified P0 acceptance:
+  - added job-level escalation fields:
+    - `escalation_required`
+    - `escalation_reason`
+    - `escalation_requested_at`
+  - worker dead-letter escalation now updates job status and appends decision-trace node:
+    - action: `escalate_human_review`
+    - story mapping: `S-P0-01-02`
+- Added decision-trace artifact persistence:
+  - `decision_trace.json` now written alongside workflow outputs (or trace output root fallback)
+  - `/jobs/{id}/artifacts` now includes this trace artifact for completed jobs
+- Updated tests:
+  - `tests/unit/services/test_worker_service.py`
+  - `tests/unit/api/test_job_status.py`
+  - `tests/unit/api/test_job_artifacts.py`
+- Updated acceptance evidence docs:
+  - `tests/risk/p0_retry_escalation.md`
+  - `tests/integration/p0_supervisor_flow.md`
+  - `tests/e2e/p0_trace_visibility.md`
+- Verified full unit suite in `llm_gblup` environment with `58 passed`.

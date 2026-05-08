@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 from animal_gs_agent.schemas.worker import WorkerHealthResponse, WorkerProcessResponse, WorkerQueueRecordResponse
-from animal_gs_agent.services.job_service import run_job
+from animal_gs_agent.services.job_service import mark_job_escalated, run_job
 from animal_gs_agent.services.run_queue_service import (
     claim_next_run_job,
     count_dead_jobs,
@@ -82,6 +82,12 @@ def process_next_queued_job(
         )
         if job is None:
             queue_outcome = mark_run_job_attempt_failure(job_id, "job_not_found")
+            if queue_outcome["escalated"]:
+                mark_job_escalated(
+                    job_id,
+                    "max_attempts_exceeded",
+                    evidence=[f"job_id={job_id}", "failure=job_not_found"],
+                )
             return WorkerProcessResponse(
                 processed=True,
                 job_id=job_id,
@@ -96,6 +102,17 @@ def process_next_queued_job(
 
         if job.status == "failed":
             queue_outcome = mark_run_job_attempt_failure(job_id, job.execution_error or "workflow_failed")
+            if queue_outcome["escalated"]:
+                mark_job_escalated(
+                    job_id,
+                    "max_attempts_exceeded",
+                    evidence=[
+                        f"job_id={job_id}",
+                        f"execution_error={job.execution_error or 'workflow_failed'}",
+                        f"attempts={queue_outcome['attempts']}",
+                        f"max_attempts={queue_outcome['max_attempts']}",
+                    ],
+                )
             return WorkerProcessResponse(
                 processed=True,
                 job_id=job_id,
@@ -122,6 +139,17 @@ def process_next_queued_job(
         )
     except Exception as exc:
         queue_outcome = mark_run_job_attempt_failure(job_id, str(exc))
+        if queue_outcome["escalated"]:
+            mark_job_escalated(
+                job_id,
+                "max_attempts_exceeded",
+                evidence=[
+                    f"job_id={job_id}",
+                    f"exception={str(exc)}",
+                    f"attempts={queue_outcome['attempts']}",
+                    f"max_attempts={queue_outcome['max_attempts']}",
+                ],
+            )
         return WorkerProcessResponse(
             processed=True,
             job_id=job_id,
