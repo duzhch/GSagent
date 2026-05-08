@@ -577,3 +577,23 @@
 - Updated delivery docs/matrix:
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-05-01=PASS`)
+
+### Session 29
+
+- Continued `E-P0-05` decision-quality metrics (`F-P0-05-02`):
+  - extended metric schema:
+    - `DecisionQualityResult` in `src/animal_gs_agent/schemas/metric.py`
+  - extended metric service:
+    - `compute_decision_quality(...)` for:
+      - `top1_hit`
+      - `regret`
+      - missing-oracle fallback reason
+- Added tests:
+  - `tests/unit/p0_top1_regret.py`
+- Added evidence docs:
+  - `tests/integration/p0_metric_aggregation.md`
+  - `tests/integration/p0_top1_regret.md`
+  - `tests/risk/p0_oracle_missing.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-05-02=PASS`, `AC-P0-05-03=PASS`, `AC-P0-05-04=PASS`)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from math import sqrt
 
-from animal_gs_agent.schemas.metric import AggregatedMetricResult, TrialMetricResult
+from animal_gs_agent.schemas.metric import AggregatedMetricResult, DecisionQualityResult, TrialMetricResult
 
 
 def _pearson(y_true: list[float], y_pred: list[float]) -> float:
@@ -76,3 +76,33 @@ def aggregate_trial_metrics(records: list[TrialMetricResult]) -> list[Aggregated
             )
         )
     return result
+
+
+def compute_decision_quality(
+    *,
+    candidate_scores: dict[str, float],
+    selected_model_id: str,
+    oracle_best_score: float | None,
+) -> DecisionQualityResult:
+    selected_score = candidate_scores.get(selected_model_id)
+    if selected_score is None:
+        raise ValueError(f"selected_model_id not found in candidate_scores: {selected_model_id}")
+
+    best_candidate_score = max(candidate_scores.values()) if candidate_scores else selected_score
+    top1_hit = selected_score >= best_candidate_score
+
+    if oracle_best_score is None:
+        return DecisionQualityResult(
+            selected_model_id=selected_model_id,
+            top1_hit=top1_hit,
+            regret=None,
+            not_computable_reason="oracle_best_missing",
+        )
+
+    regret = max(0.0, oracle_best_score - selected_score)
+    return DecisionQualityResult(
+        selected_model_id=selected_model_id,
+        top1_hit=top1_hit,
+        regret=regret,
+        not_computable_reason=None,
+    )

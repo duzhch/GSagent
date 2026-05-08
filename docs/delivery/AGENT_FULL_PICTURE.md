@@ -126,6 +126,10 @@ QC governance notes:
 - Metric service now provides:
   - trial-level `Pearson` and `RMSE`
   - grouped aggregate metrics by `(population, trait, model)`
+  - decision-quality metrics:
+    - `top1_hit`
+    - `regret`
+    - explicit non-computable reason when oracle best is missing
 
 ## 2.5 Slurm Awareness
 
