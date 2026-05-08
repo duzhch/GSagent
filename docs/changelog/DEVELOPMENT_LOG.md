@@ -387,3 +387,29 @@
 - Updated trace matrix:
   - `AC-P0-02-04` -> `IN_PROGRESS`
   - `AC-P0-02-05` -> `IN_PROGRESS`
+
+### Session 20
+
+- Continued `E-P0-02` with phenotype outlier and batch-effect diagnostics (`F-P0-02-03` slice):
+  - added `phenotype_diagnostics` summary to dataset profile
+  - computes outlier ratio using trait-value z-scores
+  - computes batch-effect eta2 and significance thresholding
+  - emits structured recommendations, including covariate/stratified split guidance
+- Added configurable phenotype diagnostics env vars:
+  - `ANIMAL_GS_AGENT_PHENO_BATCH_COLUMN`
+  - `ANIMAL_GS_AGENT_PHENO_OUTLIER_ZSCORE_THRESHOLD`
+  - `ANIMAL_GS_AGENT_PHENO_OUTLIER_HIGH_RATIO_THRESHOLD`
+  - `ANIMAL_GS_AGENT_PHENO_BATCH_EFFECT_MIN_ETA2`
+- Extended risk-tag propagation:
+  - `phenotype_outlier_high`
+  - `phenotype_batch_effect_significant`
+- Extended report explainability:
+  - report now includes `Agent recommendation` line from phenotype diagnostics.
+- Added tests and evidence:
+  - `tests/unit/services/test_dataset_profile_service.py` (phenotype diagnostics coverage)
+  - `tests/unit/api/test_job_report.py` (covariate recommendation in E2E API path)
+  - `tests/integration/p0_pheno_batch_diagnosis.md`
+  - `tests/e2e/p0_covariate_recommendation.md`
+- Updated trace matrix:
+  - `AC-P0-02-06` -> `IN_PROGRESS`
+  - `AC-P0-02-07` -> `IN_PROGRESS`

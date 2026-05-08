@@ -267,3 +267,76 @@ def test_build_dataset_profile_handles_headerless_eigenvec(monkeypatch, tmp_path
     assert profile.population_structure is not None
     assert profile.population_structure.sample_count == 2
     assert profile.population_structure.pc_columns == ["PC1", "PC2"]
+
+
+def test_build_dataset_profile_generates_phenotype_outlier_and_batch_diagnostics(
+    monkeypatch, tmp_path
+) -> None:
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text(
+        "\n".join(
+            [
+                "animal_id,daily_gain,batch",
+                "A1,1.0,B1",
+                "A2,1.1,B1",
+                "A3,6.0,B2",
+                "A4,6.2,B2",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PHENO_BATCH_COLUMN", "batch")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PHENO_OUTLIER_ZSCORE_THRESHOLD", "1.0")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PHENO_OUTLIER_HIGH_RATIO_THRESHOLD", "0.10")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PHENO_BATCH_EFFECT_MIN_ETA2", "0.20")
+
+    payload = JobSubmissionRequest(
+        user_message="Run genomic selection for daily_gain",
+        trait_name="daily_gain",
+        phenotype_path=str(phenotype_file),
+        genotype_path=str(genotype_file),
+    )
+    profile = build_dataset_profile(payload)
+
+    assert profile.phenotype_diagnostics is not None
+    assert profile.phenotype_diagnostics.sample_count == 4
+    assert profile.phenotype_diagnostics.outlier_ratio >= 0.25
+    assert profile.phenotype_diagnostics.batch_effect_significant is True
+    assert "phenotype_outlier_high" in profile.risk_tags
+    assert "phenotype_batch_effect_significant" in profile.risk_tags
+    assert any("covariate" in msg for msg in profile.phenotype_diagnostics.recommendations)
+
+
+def test_build_dataset_profile_handles_missing_batch_column(monkeypatch, tmp_path) -> None:
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text(
+        "\n".join(
+            [
+                "animal_id,daily_gain",
+                "A1,1.0",
+                "A2,1.2",
+                "A3,1.1",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PHENO_BATCH_COLUMN", "batch")
+
+    payload = JobSubmissionRequest(
+        user_message="Run genomic selection for daily_gain",
+        trait_name="daily_gain",
+        phenotype_path=str(phenotype_file),
+        genotype_path=str(genotype_file),
+    )
+    profile = build_dataset_profile(payload)
+
+    assert profile.phenotype_diagnostics is not None
+    assert profile.phenotype_diagnostics.batch_effect_significant is False
+    assert profile.phenotype_diagnostics.batch_level_count == 0

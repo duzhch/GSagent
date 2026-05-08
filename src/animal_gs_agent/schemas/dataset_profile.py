@@ -34,6 +34,21 @@ class PopulationStructureSummary(BaseModel):
     relatedness_source_path: str | None = None
 
 
+class PhenotypeDiagnosticsSummary(BaseModel):
+    sample_count: int = Field(ge=0)
+    trait_value_count: int = Field(ge=0)
+    outlier_count: int = Field(ge=0)
+    outlier_ratio: float = Field(ge=0.0, le=1.0)
+    outlier_zscore_threshold: float = Field(ge=0.0)
+    high_outlier_ratio_threshold: float = Field(ge=0.0, le=1.0)
+    batch_column: str | None = None
+    batch_level_count: int = Field(ge=0)
+    batch_effect_eta2: float = Field(ge=0.0, le=1.0)
+    batch_effect_significant: bool
+    batch_effect_eta2_threshold: float = Field(ge=0.0, le=1.0)
+    recommendations: list[str] = Field(default_factory=list)
+
+
 class DatasetProfile(BaseModel):
     phenotype_path: str
     genotype_path: str
@@ -45,5 +60,6 @@ class DatasetProfile(BaseModel):
     genotype_missingness: GenotypeMissingnessSummary | None = None
     qc_risk_level: str | None = None
     population_structure: PopulationStructureSummary | None = None
+    phenotype_diagnostics: PhenotypeDiagnosticsSummary | None = None
     risk_tags: list[str] = Field(default_factory=list)
     validation_flags: list[str] = Field(default_factory=list)

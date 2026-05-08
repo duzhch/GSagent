@@ -9,6 +9,7 @@ from animal_gs_agent.schemas.dataset_profile import (
     DatasetPathChecks,
     DatasetProfile,
     GenotypeMissingnessSummary,
+    PhenotypeDiagnosticsSummary,
     PopulationStructureSummary,
 )
 from animal_gs_agent.schemas.jobs import JobSubmissionRequest
@@ -117,6 +118,26 @@ def _pca_outlier_threshold() -> float:
 def _relatedness_threshold() -> float:
     raw = os.getenv("ANIMAL_GS_AGENT_QC_RELATEDNESS_HIGH_THRESHOLD", "0.25")
     return _safe_threshold(raw, 0.25, min_value=0.0, max_value=1.0)
+
+
+def _pheno_outlier_zscore_threshold() -> float:
+    raw = os.getenv("ANIMAL_GS_AGENT_PHENO_OUTLIER_ZSCORE_THRESHOLD", "3.0")
+    return _safe_threshold(raw, 3.0, min_value=0.0, max_value=100.0)
+
+
+def _pheno_outlier_high_ratio_threshold() -> float:
+    raw = os.getenv("ANIMAL_GS_AGENT_PHENO_OUTLIER_HIGH_RATIO_THRESHOLD", "0.10")
+    return _safe_threshold(raw, 0.10, min_value=0.0, max_value=1.0)
+
+
+def _pheno_batch_effect_eta2_threshold() -> float:
+    raw = os.getenv("ANIMAL_GS_AGENT_PHENO_BATCH_EFFECT_MIN_ETA2", "0.20")
+    return _safe_threshold(raw, 0.20, min_value=0.0, max_value=1.0)
+
+
+def _pheno_batch_column() -> str:
+    raw = os.getenv("ANIMAL_GS_AGENT_PHENO_BATCH_COLUMN", "batch").strip()
+    return raw or "batch"
 
 
 def _split_row(line: str) -> list[str]:
@@ -269,6 +290,124 @@ def _build_population_structure_summary() -> PopulationStructureSummary | None:
     )
 
 
+def _iter_phenotype_rows(path: Path, phenotype_format: str | None) -> list[dict[str, str]]:
+    if phenotype_format not in SUPPORTED_PHENOTYPE_FORMATS:
+        return []
+    delimiter = "," if phenotype_format == "csv" else "\t"
+    with path.open("r", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle, delimiter=delimiter)
+        return [{k.strip(): (v.strip() if isinstance(v, str) else "") for k, v in row.items()} for row in reader]
+
+
+def _extract_trait_and_batch_values(
+    rows: list[dict[str, str]], trait_name: str, batch_column: str
+) -> tuple[list[float], list[str]]:
+    if not rows:
+        return [], []
+    if trait_name in rows[0]:
+        trait_values: list[float] = []
+        batches: list[str] = []
+        for row in rows:
+            value = _safe_float(row.get(trait_name))
+            if value is None:
+                continue
+            trait_values.append(value)
+            batches.append(row.get(batch_column, ""))
+        return trait_values, batches
+
+    has_long_format = "trait" in rows[0] and "value" in rows[0]
+    if not has_long_format:
+        return [], []
+    trait_values = []
+    batches = []
+    for row in rows:
+        if row.get("trait", "") != trait_name:
+            continue
+        value = _safe_float(row.get("value"))
+        if value is None:
+            continue
+        trait_values.append(value)
+        batches.append(row.get(batch_column, ""))
+    return trait_values, batches
+
+
+def _compute_outlier_count(values: list[float], zscore_threshold: float) -> int:
+    if len(values) < 2:
+        return 0
+    mean = sum(values) / len(values)
+    variance = sum((value - mean) ** 2 for value in values) / len(values)
+    std = math.sqrt(variance)
+    if std == 0:
+        return 0
+    return sum(1 for value in values if abs((value - mean) / std) > zscore_threshold)
+
+
+def _compute_batch_eta2(values: list[float], batches: list[str]) -> tuple[float, int]:
+    paired = [(value, batch) for value, batch in zip(values, batches) if batch]
+    if len(paired) < 2:
+        return 0.0, 0
+    grouped: dict[str, list[float]] = {}
+    for value, batch in paired:
+        grouped.setdefault(batch, []).append(value)
+    if len(grouped) < 2:
+        return 0.0, len(grouped)
+
+    all_values = [value for values_per_batch in grouped.values() for value in values_per_batch]
+    grand_mean = sum(all_values) / len(all_values)
+    ss_total = sum((value - grand_mean) ** 2 for value in all_values)
+    if ss_total == 0:
+        return 0.0, len(grouped)
+    ss_between = sum(len(vals) * ((sum(vals) / len(vals) - grand_mean) ** 2) for vals in grouped.values())
+    return ss_between / ss_total, len(grouped)
+
+
+def _build_phenotype_diagnostics(
+    *,
+    phenotype_path: Path,
+    phenotype_format: str | None,
+    trait_name: str,
+    phenotype_headers: list[str],
+) -> PhenotypeDiagnosticsSummary | None:
+    if not phenotype_path.exists():
+        return None
+    rows = _iter_phenotype_rows(phenotype_path, phenotype_format)
+    if not rows:
+        return None
+
+    batch_column = _pheno_batch_column()
+    outlier_zscore_threshold = _pheno_outlier_zscore_threshold()
+    high_outlier_ratio_threshold = _pheno_outlier_high_ratio_threshold()
+    batch_effect_eta2_threshold = _pheno_batch_effect_eta2_threshold()
+
+    trait_values, batch_values = _extract_trait_and_batch_values(rows, trait_name, batch_column)
+    outlier_count = _compute_outlier_count(trait_values, outlier_zscore_threshold)
+    outlier_ratio = (outlier_count / len(trait_values)) if trait_values else 0.0
+
+    eta2, batch_level_count = _compute_batch_eta2(trait_values, batch_values)
+    batch_effect_significant = eta2 >= batch_effect_eta2_threshold and batch_level_count >= 2
+
+    recommendations: list[str] = []
+    if outlier_ratio >= high_outlier_ratio_threshold and trait_values:
+        recommendations.append("recommend robust outlier handling before model fitting")
+    if batch_effect_significant:
+        recommendations.append(f"recommend covariate={batch_column} or stratified validation split")
+
+    return PhenotypeDiagnosticsSummary(
+        sample_count=len(rows),
+        trait_value_count=len(trait_values),
+        outlier_count=outlier_count,
+        outlier_ratio=outlier_ratio,
+        outlier_zscore_threshold=outlier_zscore_threshold,
+        high_outlier_ratio_threshold=high_outlier_ratio_threshold,
+        batch_column=batch_column if batch_column in {h.strip() for h in phenotype_headers} else None,
+        batch_level_count=batch_level_count,
+        batch_effect_eta2=eta2,
+        batch_effect_significant=batch_effect_significant,
+        batch_effect_eta2_threshold=batch_effect_eta2_threshold,
+        recommendations=recommendations,
+    )
+
+
 def build_dataset_profile(payload: JobSubmissionRequest) -> DatasetProfile:
     phenotype_path = Path(payload.phenotype_path)
     genotype_path = Path(payload.genotype_path)
@@ -316,6 +455,12 @@ def build_dataset_profile(payload: JobSubmissionRequest) -> DatasetProfile:
             validation_flags.append("qc_risk_high")
 
     population_structure = _build_population_structure_summary()
+    phenotype_diagnostics = _build_phenotype_diagnostics(
+        phenotype_path=phenotype_path,
+        phenotype_format=phenotype_format,
+        trait_name=payload.trait_name,
+        phenotype_headers=phenotype_headers,
+    )
     risk_tags: list[str] = []
     if qc_risk_level == "high":
         risk_tags.append("qc_missingness_high")
@@ -324,6 +469,11 @@ def build_dataset_profile(payload: JobSubmissionRequest) -> DatasetProfile:
             risk_tags.append("population_structure_outliers")
         if population_structure.high_relatedness_pair_count > 0:
             risk_tags.append("population_relatedness_high")
+    if phenotype_diagnostics is not None:
+        if phenotype_diagnostics.outlier_ratio >= phenotype_diagnostics.high_outlier_ratio_threshold:
+            risk_tags.append("phenotype_outlier_high")
+        if phenotype_diagnostics.batch_effect_significant:
+            risk_tags.append("phenotype_batch_effect_significant")
 
     return DatasetProfile(
         phenotype_path=payload.phenotype_path,
@@ -339,6 +489,7 @@ def build_dataset_profile(payload: JobSubmissionRequest) -> DatasetProfile:
         genotype_missingness=missingness_summary,
         qc_risk_level=qc_risk_level,
         population_structure=population_structure,
+        phenotype_diagnostics=phenotype_diagnostics,
         risk_tags=risk_tags,
         validation_flags=validation_flags,
     )

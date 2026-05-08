@@ -14,10 +14,14 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
     ) or "no candidates"
     risk_tags = job.dataset_profile.risk_tags
     risk_text = ", ".join(risk_tags) if risk_tags else "none"
+    diagnostics = job.dataset_profile.phenotype_diagnostics
+    recommendations = diagnostics.recommendations if diagnostics is not None else []
+    recommendation_text = " | ".join(recommendations) if recommendations else "none"
 
     report_text = (
         f"Agent layer: interpreted trait `{job.trait_name}`, extracted fixed effects [{fixed_effects}], "
         f"and validated dataset structure before execution (risk tags: {risk_text}).\n"
+        f"Agent recommendation: {recommendation_text}.\n"
         f"Workflow layer: executed `{job.workflow_backend}` and produced ranked GEBV outputs from fixed GS pipeline.\n"
         f"Top candidates preview: {top_preview}."
     )

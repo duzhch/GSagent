@@ -96,6 +96,10 @@ QC governance notes:
 - Population-structure diagnostics produce `risk_tags` such as:
   - `population_structure_outliers`
   - `population_relatedness_high`
+- Phenotype diagnostics produce:
+  - outlier ratio
+  - batch-effect significance estimate
+  - model-stage recommendations (for example `covariate=batch` or stratified split)
 - Risk tags are carried through run/report layers for model-stage awareness.
 
 ## 2.5 Slurm Awareness
