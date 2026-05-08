@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import os
 
-from animal_gs_agent.schemas.worker import WorkerHealthResponse, WorkerProcessResponse
+from animal_gs_agent.schemas.worker import WorkerHealthResponse, WorkerProcessResponse, WorkerQueueRecordResponse
 from animal_gs_agent.services.job_service import run_job
 from animal_gs_agent.services.run_queue_service import (
     claim_next_run_job,
+    count_dead_jobs,
     count_pending_jobs,
     get_run_queue_record,
     mark_run_job_done,
-    mark_run_job_failed,
+    mark_run_job_attempt_failure,
 )
 from animal_gs_agent.services.workflow_result_service import parse_workflow_outputs
 from animal_gs_agent.services.workflow_service import execute_fixed_workflow
@@ -36,6 +37,23 @@ def get_worker_health_snapshot() -> WorkerHealthResponse:
         queue_backend="sqlite",
         queue_db_path=queue_path,
         pending_jobs=count_pending_jobs(),
+        dead_jobs=count_dead_jobs(),
+    )
+
+
+def get_worker_queue_record(job_id: str) -> WorkerQueueRecordResponse | None:
+    record = get_run_queue_record(job_id)
+    if record is None:
+        return None
+    return WorkerQueueRecordResponse(
+        job_id=record["job_id"],
+        status=record["status"],
+        attempts=record["attempts"],
+        max_attempts=record["max_attempts"],
+        last_error=record["last_error"],
+        next_retry_at=record["next_retry_at"],
+        escalated=record["escalated"],
+        escalation_reason=record["escalation_reason"],
     )
 
 
@@ -63,39 +81,55 @@ def process_next_queued_job(
             workflow_output_parser=workflow_output_parser,
         )
         if job is None:
-            mark_run_job_failed(job_id, "job_not_found")
+            queue_outcome = mark_run_job_attempt_failure(job_id, "job_not_found")
             return WorkerProcessResponse(
                 processed=True,
                 job_id=job_id,
                 job_status="missing",
-                queue_status="failed",
+                queue_status=queue_outcome["queue_status"],
+                attempts=queue_outcome["attempts"],
+                max_attempts=queue_outcome["max_attempts"],
+                next_retry_at=queue_outcome["next_retry_at"],
+                escalated=queue_outcome["escalated"],
                 message="job not found in store",
             )
 
         if job.status == "failed":
-            mark_run_job_failed(job_id, job.execution_error or "workflow_failed")
+            queue_outcome = mark_run_job_attempt_failure(job_id, job.execution_error or "workflow_failed")
             return WorkerProcessResponse(
                 processed=True,
                 job_id=job_id,
                 job_status=job.status,
-                queue_status="failed",
+                queue_status=queue_outcome["queue_status"],
+                attempts=queue_outcome["attempts"],
+                max_attempts=queue_outcome["max_attempts"],
+                next_retry_at=queue_outcome["next_retry_at"],
+                escalated=queue_outcome["escalated"],
                 message=job.execution_error_detail or job.execution_error or "workflow failed",
             )
 
         mark_run_job_done(job_id)
+        record = get_run_queue_record(job_id)
         return WorkerProcessResponse(
             processed=True,
             job_id=job_id,
             job_status=job.status,
             queue_status="done",
+            attempts=record["attempts"] if record is not None else None,
+            max_attempts=record["max_attempts"] if record is not None else None,
+            escalated=False,
             message="job processed by worker",
         )
     except Exception as exc:
-        mark_run_job_failed(job_id, str(exc))
+        queue_outcome = mark_run_job_attempt_failure(job_id, str(exc))
         return WorkerProcessResponse(
             processed=True,
             job_id=job_id,
             job_status="failed",
-            queue_status="failed",
+            queue_status=queue_outcome["queue_status"],
+            attempts=queue_outcome["attempts"],
+            max_attempts=queue_outcome["max_attempts"],
+            next_retry_at=queue_outcome["next_retry_at"],
+            escalated=queue_outcome["escalated"],
             message=str(exc),
         )

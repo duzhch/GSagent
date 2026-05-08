@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from animal_gs_agent.api.app import create_app
+from animal_gs_agent.services.run_queue_service import enqueue_run_job
 
 
 def test_worker_health_route_returns_operational_snapshot(monkeypatch, tmp_path) -> None:
@@ -88,3 +89,22 @@ def test_worker_process_once_route_processes_enqueued_job(monkeypatch, tmp_path)
     assert body["processed"] is True
     assert body["job_id"] == job_id
     assert body["job_status"] == "completed"
+
+
+def test_worker_queue_route_returns_queue_record(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("ANIMAL_GS_AGENT_RUN_QUEUE_SQLITE_PATH", str(tmp_path / "queue.db"))
+    enqueue_run_job("job001")
+
+    client = TestClient(create_app())
+    response = client.get("/worker/queue/job001")
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["job_id"] == "job001"
+    assert body["status"] == "pending"
+
+
+def test_worker_queue_route_returns_404_for_missing_record() -> None:
+    client = TestClient(create_app())
+    response = client.get("/worker/queue/missing-job")
+    assert response.status_code == 404

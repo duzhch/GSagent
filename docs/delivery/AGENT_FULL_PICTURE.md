@@ -26,6 +26,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - `GET /jobs/{job_id}/artifacts`
   - `GET /worker/health`
   - `POST /worker/process-once`
+  - `GET /worker/queue/{job_id}`
 
 ## 2.2 State and Storage
 
@@ -37,6 +38,10 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - `ANIMAL_GS_AGENT_ASYNC_RUN_ENABLED=1`
   - queue storage: `ANIMAL_GS_AGENT_RUN_QUEUE_SQLITE_PATH`
   - worker entrypoint: `scripts/native/worker_loop.py`
+  - retry governance:
+    - `ANIMAL_GS_AGENT_RUN_QUEUE_MAX_ATTEMPTS` controls retry budget
+    - `ANIMAL_GS_AGENT_RUN_QUEUE_RETRY_DELAY_SECONDS` controls requeue delay
+    - exhausted retry budget marks queue status as `dead` and escalates for manual intervention
 - Job lifecycle:
   - `queued -> running -> completed/failed`
 - Event timeline:
@@ -119,6 +124,6 @@ The agent is intentionally not a free-form bioinformatics command generator.
 
 1. Move job persistence from JSON to SQLite/PostgreSQL.
 2. Split workflow execution into background worker.
-3. Add retry policy and dead-letter handling for failed runs.
+3. Extend escalation path from queue dead-letter to explicit human approval workflow.
 4. Add access control and audit fields for multi-user deployment.
 5. Add real pig trait golden-case acceptance suite.

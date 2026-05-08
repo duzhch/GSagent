@@ -215,3 +215,29 @@
   - `AC-P0-01-04` -> `PASS`
   - `AC-P0-01-05` -> `IN_PROGRESS`
 - Verified full unit suite in `llm_gblup` environment with `53 passed`.
+
+### Session 12
+
+- Implemented retry-budget escalation hardening for `F-P0-01-01 / AC-P0-01-02`:
+  - upgraded `run_queue` schema with governance fields:
+    - `max_attempts`
+    - `next_retry_at`
+    - `escalated`
+    - `escalation_reason`
+  - added bounded retry decision path:
+    - failure under budget requeues to `pending` with delayed retry
+    - failure over budget transitions to `dead` with escalation mark
+- Extended worker behavior to stop blind retries:
+  - worker failure now calls queue retry decision and returns structured escalation status
+  - worker health now reports both `pending_jobs` and `dead_jobs`
+- Added queue observability endpoint:
+  - `GET /worker/queue/{job_id}` for queue-state replay and audit
+- Added and updated tests:
+  - `tests/unit/services/test_run_queue_service.py`
+  - `tests/unit/services/test_worker_service.py`
+  - `tests/unit/api/test_worker_routes.py`
+- Added risk-evidence note:
+  - `tests/risk/p0_retry_escalation.md`
+- Updated trace matrix:
+  - `AC-P0-01-02` -> `IN_PROGRESS` with linked evidence file
+- Verified full unit suite in `llm_gblup` environment with `57 passed`.

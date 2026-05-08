@@ -2,7 +2,7 @@ from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetPr
 from animal_gs_agent.schemas.jobs import JobSubmissionRequest
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
 from animal_gs_agent.services.job_service import create_job, jobs_store
-from animal_gs_agent.services.run_queue_service import enqueue_run_job
+from animal_gs_agent.services.run_queue_service import enqueue_run_job, get_run_queue_record
 from animal_gs_agent.services.worker_service import get_worker_health_snapshot, process_next_queued_job
 
 
@@ -86,3 +86,32 @@ def test_process_next_queued_job_consumes_pending_job(monkeypatch, tmp_path) -> 
     assert outcome.job_id == created.job_id
     assert outcome.job_status == "completed"
     assert outcome.queue_status == "done"
+
+
+def test_process_next_queued_job_escalates_after_retry_budget(monkeypatch, tmp_path) -> None:
+    queue_db = tmp_path / "queue.db"
+    store_db = tmp_path / "jobs.db"
+    monkeypatch.setenv("ANIMAL_GS_AGENT_RUN_QUEUE_SQLITE_PATH", str(queue_db))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH", str(store_db))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_RUN_QUEUE_MAX_ATTEMPTS", "1")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_RUN_QUEUE_RETRY_DELAY_SECONDS", "0")
+    jobs_store.clear()
+
+    created = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+    enqueue_run_job(created.job_id)
+
+    monkeypatch.setattr(
+        "animal_gs_agent.services.worker_service.execute_fixed_workflow",
+        lambda job: (_ for _ in ()).throw(RuntimeError("workflow boom")),
+    )
+
+    outcome = process_next_queued_job()
+    assert outcome.processed is True
+    assert outcome.job_id == created.job_id
+    assert outcome.queue_status == "dead"
+    assert outcome.escalated is True
+
+    record = get_run_queue_record(created.job_id)
+    assert record is not None
+    assert record["status"] == "dead"
+    assert record["escalated"] is True
