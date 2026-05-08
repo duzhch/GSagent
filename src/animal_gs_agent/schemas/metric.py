@@ -25,3 +25,12 @@ class DecisionQualityResult(BaseModel):
     top1_hit: bool
     regret: float | None = Field(default=None, ge=0.0)
     not_computable_reason: str | None = None
+
+
+class SearchEfficiencyResult(BaseModel):
+    total_trials: int = Field(ge=0)
+    valid_trials: int = Field(ge=0)
+    trials_to_95_best: int | None = Field(default=None, ge=1)
+    invalid_trial_rate: float = Field(ge=0.0, le=1.0)
+    invalid_reason_breakdown: dict[str, int] = Field(default_factory=dict)
+    not_computable_reason: str | None = None

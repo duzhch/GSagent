@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from math import sqrt
 
-from animal_gs_agent.schemas.metric import AggregatedMetricResult, DecisionQualityResult, TrialMetricResult
+from animal_gs_agent.schemas.metric import (
+    AggregatedMetricResult,
+    DecisionQualityResult,
+    SearchEfficiencyResult,
+    TrialMetricResult,
+)
 
 
 def _pearson(y_true: list[float], y_pred: list[float]) -> float:
@@ -104,5 +109,55 @@ def compute_decision_quality(
         selected_model_id=selected_model_id,
         top1_hit=top1_hit,
         regret=regret,
+        not_computable_reason=None,
+    )
+
+
+def compute_search_efficiency(
+    *,
+    trial_scores: list[float | None],
+    invalid_reasons: list[str | None],
+) -> SearchEfficiencyResult:
+    if len(trial_scores) != len(invalid_reasons):
+        raise ValueError("trial_scores and invalid_reasons must have the same length")
+
+    total = len(trial_scores)
+    valid_scores = [s for s in trial_scores if s is not None]
+    valid_trials = len(valid_scores)
+    invalid_trials = total - valid_trials
+    invalid_rate = (invalid_trials / total) if total > 0 else 0.0
+
+    reason_breakdown: dict[str, int] = {}
+    for reason in invalid_reasons:
+        if reason is None:
+            continue
+        reason_breakdown[reason] = reason_breakdown.get(reason, 0) + 1
+
+    if valid_trials == 0:
+        return SearchEfficiencyResult(
+            total_trials=total,
+            valid_trials=0,
+            trials_to_95_best=None,
+            invalid_trial_rate=invalid_rate,
+            invalid_reason_breakdown=reason_breakdown,
+            not_computable_reason="no_valid_trials",
+        )
+
+    best_score = max(valid_scores)
+    threshold = best_score * 0.95
+    trials_to_95: int | None = None
+    for i, score in enumerate(trial_scores, start=1):
+        if score is None:
+            continue
+        if score >= threshold:
+            trials_to_95 = i
+            break
+
+    return SearchEfficiencyResult(
+        total_trials=total,
+        valid_trials=valid_trials,
+        trials_to_95_best=trials_to_95,
+        invalid_trial_rate=invalid_rate,
+        invalid_reason_breakdown=reason_breakdown,
         not_computable_reason=None,
     )

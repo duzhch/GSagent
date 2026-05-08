@@ -130,6 +130,10 @@ QC governance notes:
     - `top1_hit`
     - `regret`
     - explicit non-computable reason when oracle best is missing
+  - search-efficiency metrics:
+    - `trials_to_95_best`
+    - `invalid_trial_rate`
+    - invalid reason drilldown and `no_valid_trials` fallback
 
 ## 2.5 Slurm Awareness
 

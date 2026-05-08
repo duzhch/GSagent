@@ -46,8 +46,8 @@
 | `F-P0-05-01` | `AC-P0-05-02` | `TC-P0-05-02` | IT | `tests/integration/p0_metric_aggregation.md` | QA | PASS |
 | `F-P0-05-02` | `AC-P0-05-03` | `TC-P0-05-03` | IT | `tests/integration/p0_top1_regret.md` | Dev+QA | PASS |
 | `F-P0-05-02` | `AC-P0-05-04` | `TC-P0-05-04` | Risk | `tests/risk/p0_oracle_missing.md` | QA | PASS |
-| `F-P0-05-03` | `AC-P0-05-05` | `TC-P0-05-05` | IT | `tests/integration/p0_trials_to_95.md` | Dev+QA | TBD |
-| `F-P0-05-03` | `AC-P0-05-06` | `TC-P0-05-06` | IT | `tests/integration/p0_invalid_trial_rate.md` | QA | TBD |
+| `F-P0-05-03` | `AC-P0-05-05` | `TC-P0-05-05` | IT | `tests/integration/p0_trials_to_95.md` | Dev+QA | PASS |
+| `F-P0-05-03` | `AC-P0-05-06` | `TC-P0-05-06` | IT | `tests/integration/p0_invalid_trial_rate.md` | QA | PASS |
 
 ## 3. P1 追踪矩阵
 

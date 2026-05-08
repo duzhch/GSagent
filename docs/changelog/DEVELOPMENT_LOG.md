@@ -597,3 +597,23 @@
 - Updated delivery docs/matrix:
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-05-02=PASS`, `AC-P0-05-03=PASS`, `AC-P0-05-04=PASS`)
+
+### Session 30
+
+- Completed `E-P0-05` search-efficiency metrics (`F-P0-05-03`):
+  - extended metric schema:
+    - `SearchEfficiencyResult` in `src/animal_gs_agent/schemas/metric.py`
+  - extended metric service:
+    - `compute_search_efficiency(...)` for:
+      - `trials_to_95_best`
+      - `invalid_trial_rate`
+      - invalid reason breakdown
+      - `no_valid_trials` fallback
+- Added tests:
+  - `tests/unit/p0_search_efficiency.py`
+- Added evidence docs:
+  - `tests/integration/p0_trials_to_95.md`
+  - `tests/integration/p0_invalid_trial_rate.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-05-05=PASS`, `AC-P0-05-06=PASS`)
