@@ -310,3 +310,17 @@
   - `F-P1-04-01 / AC-P1-04-01` -> `IN_PROGRESS`
   - `F-P1-04-02 / AC-P1-04-02` -> `IN_PROGRESS`
 - Verified full unit suite in `llm_gblup` environment with `61 passed`.
+
+### Session 16
+
+- Added a delivery-level capability baseline and gap plan:
+  - `docs/delivery/CAPABILITY_GAP_AND_UPGRADE_PLAN.md`
+- Documented implemented vs pending capabilities aligned to:
+  - current API/services runtime
+  - backlog Feature IDs
+  - acceptance closure expectations
+- Added a practical execution sequence (Phase A-D) to guide:
+  - immediate acceptance closure
+  - P0 deep-QC and strategy-agent upgrades
+- Updated document navigation map:
+  - `docs/delivery/DELIVERY_DOC_MAP.md` now includes the new capability-gap entry.

@@ -6,6 +6,7 @@
 2. 详细需求清单：`REQ_BACKLOG_FILLED.md`
 3. 执行流程规范：`ENGINEERING_QA_SOP.md`
 4. 需求-测试追踪：`ACCEPTANCE_TRACE_MATRIX.md`
+5. 能力盘点与升级路线：`CAPABILITY_GAP_AND_UPGRADE_PLAN.md`
 
 ## 2. 研发最小阅读集
 
@@ -35,10 +36,10 @@
 2. `REQ_BACKLOG_FILLED.md`：看需求是否可执行
 3. `ACCEPTANCE_TRACE_MATRIX.md`：看证据是否闭环
 4. `ENGINEERING_QA_SOP.md`：看流程是否被遵循
+5. `CAPABILITY_GAP_AND_UPGRADE_PLAN.md`：看“当前能力 vs 待建能力”是否匹配推进节奏
 
 ## 5. 版本管理规则
 
 1. 所有需求变更先改 `REQ_BACKLOG_FILLED.md` 再开发。
 2. 每次 PR 必须更新 `ACCEPTANCE_TRACE_MATRIX.md`。
 3. 每次验收会后更新 Feature 状态（`ready/in_dev/in_test/accepted/blocked`）。
-
