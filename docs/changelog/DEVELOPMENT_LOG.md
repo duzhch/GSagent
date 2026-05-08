@@ -459,3 +459,65 @@
 - Updated delivery docs/matrix:
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-03-03=PASS`)
+
+### Session 23
+
+- Continued `E-P0-03` model-pool execution-planning visibility (`F-P0-03-01`):
+  - extended job contracts with model-pool field:
+    - `model_pool_plan` in `JobSubmissionResponse`
+    - `model_pool_plan` in `JobStatusResponse`
+  - wired model-pool planning into job creation:
+    - `create_job(...)` now computes and persists plan from task + dataset profile
+- Added API-level verification for rejection reasons:
+  - `tests/unit/api/test_job_submission.py::test_submit_job_includes_model_pool_disable_reasons`
+- Added integration evidence doc:
+  - `tests/integration/p0_model_pool_rejection_reason.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-03-02=PASS`)
+
+### Session 24
+
+- Continued `E-P0-03` strategy-stop transparency and reproducibility closure (`F-P0-03-02`):
+  - extended job contracts with trial strategy field:
+    - `trial_strategy_plan` in `JobSubmissionResponse`
+    - `trial_strategy_plan` in `JobStatusResponse`
+  - wired trial strategy planning into job creation with configurable inputs:
+    - `ANIMAL_GS_AGENT_STRATEGY_MAX_TRIALS`
+    - `ANIMAL_GS_AGENT_STRATEGY_EARLY_STOP_PATIENCE`
+    - `ANIMAL_GS_AGENT_STRATEGY_MIN_IMPROVEMENT`
+    - `ANIMAL_GS_AGENT_STRATEGY_RANDOM_SEED`
+- Added API-level verification:
+  - `tests/unit/api/test_job_submission.py::test_submit_job_includes_trial_stop_reason`
+- Added acceptance evidence docs:
+  - `tests/e2e/p0_early_stop_reason.md`
+  - `tests/risk/p0_reproducibility_seed.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-03-04=PASS`, `AC-P0-03-05=PASS`)
+
+### Session 25
+
+- Continued `E-P0-03` scene-specific validation protocol closure (`F-P0-03-03`):
+  - added validation protocol schemas:
+    - `src/animal_gs_agent/schemas/validation_protocol.py`
+  - added scenario validation protocol service:
+    - `src/animal_gs_agent/services/validation_protocol_service.py`
+  - attached validation protocol planning to job state:
+    - `validation_protocol_plan` in `JobSubmissionResponse`
+    - `validation_protocol_plan` in `JobStatusResponse`
+  - scenarios covered:
+    - `within_pop`
+    - `cross_pop`
+  - metrics emitted:
+    - `within_pop_pearson`
+    - `within_pop_rmse`
+    - `cross_pop_pearson`
+    - `cross_pop_rmse`
+- Added verification evidence:
+  - `tests/unit/services/test_job_service_practical.py::test_create_job_attaches_validation_protocol_plan`
+  - `tests/integration/p0_within_pop_protocol.md`
+  - `tests/integration/p0_cross_pop_protocol.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-03-06=PASS`, `AC-P0-03-07=PASS`)

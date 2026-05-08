@@ -5,7 +5,10 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from animal_gs_agent.schemas.dataset_profile import DatasetProfile
+from animal_gs_agent.schemas.model_pool import ModelPoolPlan
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
+from animal_gs_agent.schemas.trial_strategy import TrialPlanResult
+from animal_gs_agent.schemas.validation_protocol import ValidationProtocolPlan
 
 
 class JobSubmissionRequest(BaseModel):
@@ -81,6 +84,9 @@ class JobSubmissionResponse(BaseModel):
     trait_name: str
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
+    model_pool_plan: ModelPoolPlan | None = None
+    trial_strategy_plan: TrialPlanResult | None = None
+    validation_protocol_plan: ValidationProtocolPlan | None = None
     execution_error: str | None = None
     execution_error_detail: str | None = None
     workflow_backend: str | None = None
@@ -108,6 +114,9 @@ class JobStatusResponse(BaseModel):
     trait_name: str
     task_understanding: TaskUnderstandingResult
     dataset_profile: DatasetProfile
+    model_pool_plan: ModelPoolPlan | None = None
+    trial_strategy_plan: TrialPlanResult | None = None
+    validation_protocol_plan: ValidationProtocolPlan | None = None
     execution_error: str | None = None
     execution_error_detail: str | None = None
     workflow_backend: str | None = None

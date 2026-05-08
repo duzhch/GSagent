@@ -105,10 +105,16 @@ QC governance notes:
   - `GBLUP`
   - `BayesB`
   - `XGBoost`
+  - model-pool planning result is attached to job state as `model_pool_plan`
 - Trial-orchestrator service now supports budget-constrained planning:
   - input: `max_trials`, candidate model set, `random_seed`
   - output: trial sequence, selected model, budget consumed, stop reason
   - stop reasons include `budget_exhausted`, `early_stop_no_improvement`, `no_candidate_models`
+  - trial strategy result is attached to job state as `trial_strategy_plan`
+- Scenario validation protocol planning now outputs both:
+  - `within_pop` split and metrics (`within_pop_pearson`, `within_pop_rmse`)
+  - `cross_pop` split and metrics (`cross_pop_pearson`, `cross_pop_rmse`)
+  - validation protocol result is attached to job state as `validation_protocol_plan`
 
 ## 2.5 Slurm Awareness
 

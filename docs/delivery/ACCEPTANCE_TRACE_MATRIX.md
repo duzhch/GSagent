@@ -32,12 +32,12 @@
 | `F-P0-02-03` | `AC-P0-02-06` | `TC-P0-02-06` | IT | `tests/integration/p0_pheno_batch_diagnosis.md` | Dev+QA | IN_PROGRESS |
 | `F-P0-02-03` | `AC-P0-02-07` | `TC-P0-02-07` | E2E | `tests/e2e/p0_covariate_recommendation.md` | QA | IN_PROGRESS |
 | `F-P0-03-01` | `AC-P0-03-01` | `TC-P0-03-01` | UT | `tests/unit/p0_model_pool_availability.py` | Dev | PASS |
-| `F-P0-03-01` | `AC-P0-03-02` | `TC-P0-03-02` | IT | `tests/integration/p0_model_pool_rejection_reason.md` | QA | TBD |
+| `F-P0-03-01` | `AC-P0-03-02` | `TC-P0-03-02` | IT | `tests/integration/p0_model_pool_rejection_reason.md` | QA | PASS |
 | `F-P0-03-02` | `AC-P0-03-03` | `TC-P0-03-03` | UT | `tests/unit/p0_trial_budget_guard.py` | Dev | PASS |
-| `F-P0-03-02` | `AC-P0-03-04` | `TC-P0-03-04` | E2E | `tests/e2e/p0_early_stop_reason.md` | QA | TBD |
-| `F-P0-03-02` | `AC-P0-03-05` | `TC-P0-03-05` | Risk | `tests/risk/p0_reproducibility_seed.md` | QA | TBD |
-| `F-P0-03-03` | `AC-P0-03-06` | `TC-P0-03-06` | IT | `tests/integration/p0_within_pop_protocol.md` | Dev+QA | TBD |
-| `F-P0-03-03` | `AC-P0-03-07` | `TC-P0-03-07` | IT | `tests/integration/p0_cross_pop_protocol.md` | Dev+QA | TBD |
+| `F-P0-03-02` | `AC-P0-03-04` | `TC-P0-03-04` | E2E | `tests/e2e/p0_early_stop_reason.md` | QA | PASS |
+| `F-P0-03-02` | `AC-P0-03-05` | `TC-P0-03-05` | Risk | `tests/risk/p0_reproducibility_seed.md` | QA | PASS |
+| `F-P0-03-03` | `AC-P0-03-06` | `TC-P0-03-06` | IT | `tests/integration/p0_within_pop_protocol.md` | Dev+QA | PASS |
+| `F-P0-03-03` | `AC-P0-03-07` | `TC-P0-03-07` | IT | `tests/integration/p0_cross_pop_protocol.md` | Dev+QA | PASS |
 | `F-P0-04-01` | `AC-P0-04-01` | `TC-P0-04-01` | UT | `tests/unit/p0_claim_evidence_map.py` | Dev | TBD |
 | `F-P0-04-01` | `AC-P0-04-02` | `TC-P0-04-02` | Risk | `tests/risk/p0_reject_no_evidence.md` | QA | TBD |
 | `F-P0-04-02` | `AC-P0-04-03` | `TC-P0-04-03` | IT | `tests/integration/p0_leakage_check.md` | QA | TBD |

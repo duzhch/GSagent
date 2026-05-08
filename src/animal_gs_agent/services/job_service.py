@@ -17,6 +17,9 @@ from animal_gs_agent.schemas.jobs import (
 from animal_gs_agent.schemas.dataset_profile import DatasetProfile
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
 from animal_gs_agent.services.workflow_service import WorkflowExecutionError
+from animal_gs_agent.services.model_pool_service import build_model_pool_plan
+from animal_gs_agent.services.trial_orchestrator_service import build_trial_plan
+from animal_gs_agent.services.validation_protocol_service import build_validation_protocol_plan
 
 jobs_store: dict[str, JobStatusResponse] = {}
 
@@ -102,6 +105,34 @@ def _trace_output_dir(job: JobStatusResponse) -> Path:
         )
     )
     return root / job.job_id
+
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.getenv(name, str(default))
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return value
+
+
+def _float_env(name: str, default: float) -> float:
+    raw = os.getenv(name, str(default))
+    try:
+        value = float(raw)
+    except ValueError:
+        return default
+    return value
+
+
+def _optional_int_env(name: str) -> int | None:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
 
 
 def _persist_decision_trace_file(job: JobStatusResponse) -> None:
@@ -226,12 +257,24 @@ def create_job(
     task_understanding: TaskUnderstandingResult,
     dataset_profile: DatasetProfile,
 ) -> JobSubmissionResponse:
+    model_pool_plan = build_model_pool_plan(task_understanding, dataset_profile)
+    trial_strategy_plan = build_trial_plan(
+        max_trials=max(1, _int_env("ANIMAL_GS_AGENT_STRATEGY_MAX_TRIALS", 5)),
+        candidate_models=model_pool_plan.available_models,
+        random_seed=_optional_int_env("ANIMAL_GS_AGENT_STRATEGY_RANDOM_SEED"),
+        early_stop_patience=max(1, _int_env("ANIMAL_GS_AGENT_STRATEGY_EARLY_STOP_PATIENCE", 3)),
+        min_improvement=_float_env("ANIMAL_GS_AGENT_STRATEGY_MIN_IMPROVEMENT", 0.0),
+    )
+    validation_protocol_plan = build_validation_protocol_plan(task_understanding, dataset_profile)
     job = JobStatusResponse(
         job_id=uuid4().hex[:8],
         status="queued",
         trait_name=payload.trait_name,
         task_understanding=task_understanding,
         dataset_profile=dataset_profile,
+        model_pool_plan=model_pool_plan,
+        trial_strategy_plan=trial_strategy_plan,
+        validation_protocol_plan=validation_protocol_plan,
         events=[
             JobEvent(
                 phase="queued",

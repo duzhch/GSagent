@@ -141,3 +141,22 @@ def test_get_job_reloads_sqlite_when_in_memory_copy_is_stale(monkeypatch, tmp_pa
     refreshed = get_job(job_id)
     assert refreshed is not None
     assert refreshed.status == "completed"
+
+
+def test_create_job_attaches_validation_protocol_plan() -> None:
+    created = create_job(_request(), task_understanding=_task(), dataset_profile=_profile())
+
+    assert created.validation_protocol_plan is not None
+    protocols = {item.scenario_id: item for item in created.validation_protocol_plan.protocols}
+
+    assert set(protocols) == {"within_pop", "cross_pop"}
+
+    within = protocols["within_pop"]
+    assert within.metrics == ["within_pop_pearson", "within_pop_rmse"]
+    assert within.split_records[0].train_population == "pig"
+    assert within.split_records[0].validation_population == "pig"
+
+    cross = protocols["cross_pop"]
+    assert cross.metrics == ["cross_pop_pearson", "cross_pop_rmse"]
+    assert cross.split_records[0].train_population == "pig"
+    assert cross.split_records[0].validation_population == "held-out population"
