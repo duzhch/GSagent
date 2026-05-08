@@ -8,6 +8,7 @@ import sqlite3
 from uuid import uuid4
 
 from animal_gs_agent.schemas.jobs import (
+    DecisionTraceNode,
     JobEvent,
     JobStatusResponse,
     JobSubmissionRequest,
@@ -32,6 +33,40 @@ def _append_event(job: JobStatusResponse, phase: str, message: str, error_code: 
             timestamp=_now_iso(),
             message=message,
             error_code=error_code,
+        ),
+    ]
+
+
+def _append_decision(
+    job: JobStatusResponse,
+    *,
+    decision_id: str,
+    action: str,
+    rationale: str,
+    confidence: float,
+    evidence: list[str] | None = None,
+    input_summary: str | None = None,
+    output_summary: str | None = None,
+    counterfactual: str | None = None,
+    feature_id: str = "F-P0-01-02",
+    story_id: str | None = None,
+    agent_id: str = "supervisor",
+) -> list[DecisionTraceNode]:
+    return [
+        *job.decision_trace,
+        DecisionTraceNode(
+            decision_id=decision_id,
+            feature_id=feature_id,
+            story_id=story_id,
+            agent_id=agent_id,
+            action=action,
+            rationale=rationale,
+            confidence=confidence,
+            evidence=evidence or [],
+            input_summary=input_summary,
+            output_summary=output_summary,
+            counterfactual=counterfactual,
+            timestamp=_now_iso(),
         ),
     ]
 
@@ -167,6 +202,21 @@ def create_job(
                 message="job accepted and queued",
             )
         ],
+        decision_trace=[
+            DecisionTraceNode(
+                decision_id="intake_accept_job",
+                feature_id="F-P0-01-02",
+                story_id="S-P0-01-03",
+                agent_id="supervisor",
+                action="accept_job",
+                rationale="request passed intake parsing and was admitted to job queue",
+                confidence=0.95,
+                evidence=[f"trait={payload.trait_name}", f"scope={task_understanding.request_scope}"],
+                input_summary=payload.user_message,
+                output_summary="job status=queued",
+                timestamp=_now_iso(),
+            )
+        ],
     )
     jobs_store[job.job_id] = job
     _persist_store_if_needed()
@@ -225,6 +275,16 @@ def refresh_running_job(
         updated = job.model_copy(
             update={
                 "workflow_queue_state": queue_state,
+                "decision_trace": _append_decision(
+                    job,
+                    decision_id=f"slurm_poll_{queue_state.lower()}",
+                    action="poll_slurm_state",
+                    rationale="polling remote scheduler to refresh runtime state",
+                    confidence=0.9,
+                    evidence=[f"submission_id={job.workflow_submission_id}", f"queue_state={queue_state}"],
+                    output_summary=f"job remains {job.status}",
+                    story_id="S-P0-01-03",
+                ),
             }
         )
         jobs_store[job_id] = updated
@@ -252,6 +312,16 @@ def refresh_running_job(
                             message="workflow output parsing failed after slurm completion",
                             error_code="workflow_output_parse_error",
                         ),
+                        "decision_trace": _append_decision(
+                            job,
+                            decision_id="slurm_complete_parse_failed",
+                            action="finalize_failed",
+                            rationale="workflow finished but output parsing failed",
+                            confidence=0.92,
+                            evidence=["error=workflow_output_parse_error"],
+                            output_summary="job status=failed",
+                            story_id="S-P0-01-03",
+                        ),
                     }
                 )
                 jobs_store[job_id] = failed
@@ -270,6 +340,16 @@ def refresh_running_job(
                     phase="completed",
                     message=f"slurm workflow finished ({queue_state})",
                 ),
+                "decision_trace": _append_decision(
+                    job,
+                    decision_id="slurm_complete_success",
+                    action="finalize_completed",
+                    rationale="scheduler reported completion and outputs were parseable",
+                    confidence=0.95,
+                    evidence=[f"queue_state={queue_state}", f"result_dir={job.workflow_result_dir or 'unknown'}"],
+                    output_summary="job status=completed",
+                    story_id="S-P0-01-03",
+                ),
             }
         )
         jobs_store[job_id] = completed
@@ -287,6 +367,16 @@ def refresh_running_job(
                 phase="failed",
                 message=f"slurm workflow failed ({queue_state})",
                 error_code="workflow_slurm_failed",
+            ),
+            "decision_trace": _append_decision(
+                job,
+                decision_id=f"slurm_terminal_{queue_state.lower()}",
+                action="finalize_failed",
+                rationale="scheduler returned terminal non-success state",
+                confidence=0.94,
+                evidence=[f"queue_state={queue_state}"],
+                output_summary="job status=failed",
+                story_id="S-P0-01-03",
             ),
         }
     )
@@ -309,6 +399,16 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
             "execution_error": None,
             "execution_error_detail": None,
             "events": _append_event(job, phase="running", message="workflow execution started"),
+            "decision_trace": _append_decision(
+                job,
+                decision_id="run_workflow_started",
+                action="start_workflow",
+                rationale="job dequeued and workflow execution began",
+                confidence=0.9,
+                evidence=[f"job_id={job_id}"],
+                output_summary="job status=running",
+                story_id="S-P0-01-02",
+            ),
         }
     )
     jobs_store[job_id] = running_job
@@ -326,6 +426,16 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                     phase="failed",
                     message="dataset validation failed",
                     error_code=first_error,
+                ),
+                "decision_trace": _append_decision(
+                    running_job,
+                    decision_id="preflight_dataset_failed",
+                    action="block_execution",
+                    rationale="dataset validation failed prior to workflow launch",
+                    confidence=0.98,
+                    evidence=[f"validation_error={first_error}"],
+                    output_summary="job status=failed",
+                    story_id="S-P0-01-02",
                 ),
             }
         )
@@ -348,6 +458,16 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                         message="workflow execution failed",
                         error_code=exc.code,
                     ),
+                    "decision_trace": _append_decision(
+                        running_job,
+                        decision_id="workflow_runtime_failed",
+                        action="finalize_failed",
+                        rationale="workflow executor raised runtime failure",
+                        confidence=0.96,
+                        evidence=[f"error_code={exc.code}"],
+                        output_summary="job status=failed",
+                        story_id="S-P0-01-02",
+                    ),
                 }
             )
             jobs_store[job_id] = failed_job
@@ -368,6 +488,16 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                         running_job,
                         phase="running",
                         message=f"submitted workflow to slurm ({execution_result.submission_id or 'unknown_job_id'})",
+                    ),
+                    "decision_trace": _append_decision(
+                        running_job,
+                        decision_id="workflow_submitted_slurm",
+                        action="submit_slurm",
+                        rationale="execution policy routed workflow to slurm backend",
+                        confidence=0.93,
+                        evidence=[f"submission_id={execution_result.submission_id or 'unknown_job_id'}"],
+                        output_summary="job status=running",
+                        story_id="S-P0-01-02",
                     ),
                 }
             )
@@ -394,6 +524,16 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                             message="workflow output parsing failed",
                             error_code="workflow_output_parse_error",
                         ),
+                        "decision_trace": _append_decision(
+                            running_job,
+                            decision_id="workflow_parse_failed",
+                            action="finalize_failed",
+                            rationale="workflow ran but outputs could not be parsed",
+                            confidence=0.95,
+                            evidence=["error=workflow_output_parse_error"],
+                            output_summary="job status=failed",
+                            story_id="S-P0-01-03",
+                        ),
                     }
                 )
                 jobs_store[job_id] = failed_job
@@ -413,6 +553,16 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                     phase="completed",
                     message="workflow execution and parsing completed",
                 ),
+                "decision_trace": _append_decision(
+                    running_job,
+                    decision_id="workflow_completed_success",
+                    action="finalize_completed",
+                    rationale="workflow and parser both completed successfully",
+                    confidence=0.97,
+                    evidence=[f"backend={execution_result.backend}", f"result_dir={execution_result.result_dir}"],
+                    output_summary="job status=completed",
+                    story_id="S-P0-01-03",
+                ),
             }
         )
         jobs_store[job_id] = completed_job
@@ -428,6 +578,15 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                 running_job,
                 phase="completed",
                 message="job completed without external workflow executor",
+            ),
+            "decision_trace": _append_decision(
+                running_job,
+                decision_id="workflow_bypass_completed",
+                action="finalize_completed",
+                rationale="no external workflow executor configured; synthetic completion path",
+                confidence=0.75,
+                output_summary="job status=completed",
+                story_id="S-P0-01-03",
             ),
         }
     )

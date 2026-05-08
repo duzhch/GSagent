@@ -21,6 +21,7 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - `POST /jobs`
   - `POST /jobs/{job_id}/run`
   - `GET /jobs/{job_id}`
+  - `GET /jobs/{job_id}/trace`
   - `GET /jobs/{job_id}/report`
   - `GET /jobs/{job_id}/artifacts`
   - `GET /worker/health`
@@ -40,6 +41,9 @@ The agent is intentionally not a free-form bioinformatics command generator.
   - `queued -> running -> completed/failed`
 - Event timeline:
   - each state transition appends structured event entries
+- Decision trace timeline:
+  - each governance decision appends structured decision nodes
+  - includes `decision_id`, `feature_id`, `story_id`, `agent_id`, `action`, rationale, confidence, evidence
 
 ## 2.3 LLM Task Understanding
 

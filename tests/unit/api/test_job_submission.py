@@ -51,7 +51,7 @@ def test_submit_job_returns_pending_job(monkeypatch) -> None:
     assert "job_id" in body
 
 
-def test_submit_job_falls_back_to_heuristic_when_llm_not_configured(monkeypatch) -> None:
+def test_submit_job_returns_503_when_llm_not_configured(monkeypatch) -> None:
     monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_BASE_URL", raising=False)
     monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_API_KEY", raising=False)
     monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_MODEL", raising=False)
@@ -68,10 +68,5 @@ def test_submit_job_falls_back_to_heuristic_when_llm_not_configured(monkeypatch)
         },
     )
 
-    body = response.json()
-
-    assert response.status_code == 202
-    assert body["status"] == "queued"
-    assert body["task_understanding"]["request_scope"] == "supported_gs"
-    assert body["task_understanding"]["trait_name"] == "daily_gain"
-    assert "sex" in body["task_understanding"]["candidate_fixed_effects"]
+    assert response.status_code == 503
+    assert response.json()["detail"] == "LLM provider is not configured"

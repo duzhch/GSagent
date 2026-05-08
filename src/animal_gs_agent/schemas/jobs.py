@@ -36,6 +36,21 @@ class JobEvent(BaseModel):
     error_code: str | None = None
 
 
+class DecisionTraceNode(BaseModel):
+    decision_id: str
+    feature_id: str
+    story_id: str | None = None
+    agent_id: str
+    action: str
+    rationale: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence: list[str] = Field(default_factory=list)
+    input_summary: str | None = None
+    output_summary: str | None = None
+    counterfactual: str | None = None
+    timestamp: str
+
+
 class JobArtifact(BaseModel):
     relative_path: str
     size_bytes: int
@@ -62,6 +77,7 @@ class JobSubmissionResponse(BaseModel):
     workflow_queue_state: str | None = None
     workflow_summary: WorkflowSummary | None = None
     events: list[JobEvent] = Field(default_factory=list)
+    decision_trace: list[DecisionTraceNode] = Field(default_factory=list)
 
 
 class JobStatusResponse(BaseModel):
@@ -78,6 +94,7 @@ class JobStatusResponse(BaseModel):
     workflow_queue_state: str | None = None
     workflow_summary: WorkflowSummary | None = None
     events: list[JobEvent] = Field(default_factory=list)
+    decision_trace: list[DecisionTraceNode] = Field(default_factory=list)
 
 
 class JobReportResponse(BaseModel):
@@ -86,3 +103,9 @@ class JobReportResponse(BaseModel):
     status: str
     report_text: str
     top_candidates: list[RankedCandidate] = Field(default_factory=list)
+
+
+class JobDecisionTraceResponse(BaseModel):
+    job_id: str
+    status: str
+    decision_trace: list[DecisionTraceNode] = Field(default_factory=list)

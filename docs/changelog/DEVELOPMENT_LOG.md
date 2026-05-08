@@ -195,3 +195,23 @@
   - worker API routes (`test_worker_routes.py`)
 - Updated README/native packaging/overall plan docs to include worker control-plane endpoints.
 - Verified full unit suite in `llm_gblup` environment with `45 passed`.
+
+### Session 11
+
+- Implemented P0 decision-trace standardization slice (`F-P0-01-02`):
+  - added typed `DecisionTraceNode` and `JobDecisionTraceResponse` schemas
+  - added `decision_trace` persistence field to job submission/status contracts
+  - added `GET /jobs/{job_id}/trace` API for trace replay
+  - appended decision nodes across key job lifecycle transitions (accept/run/block/fail/complete/slurm refresh)
+- Aligned runtime behavior with strict model requirement:
+  - removed `/jobs` fallback heuristic parsing when LLM is not configured
+  - `/jobs` now returns `503` with explicit provider-not-configured error
+- Added tests and evidence:
+  - `tests/unit/p0_trace_schema_test.py`
+  - `tests/unit/api/test_job_trace.py`
+  - updated `tests/unit/api/test_job_submission.py` for strict no-fallback behavior
+  - added integration evidence doc `tests/integration/p0_trace_linkage.md`
+- Updated acceptance matrix status:
+  - `AC-P0-01-04` -> `PASS`
+  - `AC-P0-01-05` -> `IN_PROGRESS`
+- Verified full unit suite in `llm_gblup` environment with `53 passed`.

@@ -8,12 +8,12 @@ from animal_gs_agent.agent.task_understanding import (
     TaskUnderstandingProviderError,
     TaskUnderstandingValidationError,
     understand_task,
-    understand_task_heuristic,
 )
 from animal_gs_agent.config import get_settings
 from animal_gs_agent.llm.client import OpenAICompatibleLLMClient
 from animal_gs_agent.schemas.jobs import (
     JobArtifactsResponse,
+    JobDecisionTraceResponse,
     JobReportResponse,
     JobStatusResponse,
     JobSubmissionRequest,
@@ -46,17 +46,14 @@ def create_jobs_router() -> APIRouter:
     )
     def submit_job(payload: JobSubmissionRequest) -> JobSubmissionResponse:
         settings = get_settings()
-        if settings.llm.base_url and settings.llm.api_key and settings.llm.model:
-            client = OpenAICompatibleLLMClient(settings.llm)
-            try:
-                task_understanding = understand_task(payload.user_message, llm_client=client)
-            except (TaskUnderstandingProviderError, TaskUnderstandingValidationError) as exc:
-                raise HTTPException(status_code=502, detail=str(exc)) from exc
-        else:
-            task_understanding = understand_task_heuristic(
-                user_message=payload.user_message,
-                trait_name=payload.trait_name,
-            )
+        if not settings.llm.base_url or not settings.llm.api_key or not settings.llm.model:
+            raise HTTPException(status_code=503, detail="LLM provider is not configured")
+
+        client = OpenAICompatibleLLMClient(settings.llm)
+        try:
+            task_understanding = understand_task(payload.user_message, llm_client=client)
+        except (TaskUnderstandingProviderError, TaskUnderstandingValidationError) as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
 
         dataset_profile = build_dataset_profile(payload)
         return create_job(
@@ -75,6 +72,17 @@ def create_jobs_router() -> APIRouter:
         if job is None:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
         return job
+
+    @router.get("/jobs/{job_id}/trace", response_model=JobDecisionTraceResponse)
+    def get_job_trace(job_id: str) -> JobDecisionTraceResponse:
+        job = get_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        return JobDecisionTraceResponse(
+            job_id=job.job_id,
+            status=job.status,
+            decision_trace=job.decision_trace,
+        )
 
     @router.post("/jobs/{job_id}/run", response_model=JobStatusResponse, response_model_exclude_none=True)
     def run_submitted_job(job_id: str) -> JobStatusResponse:
