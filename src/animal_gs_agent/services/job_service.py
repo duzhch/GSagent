@@ -22,6 +22,7 @@ from animal_gs_agent.services.model_pool_service import build_model_pool_plan
 from animal_gs_agent.services.trial_orchestrator_service import build_trial_plan
 from animal_gs_agent.services.validation_protocol_service import build_validation_protocol_plan
 from animal_gs_agent.services.badcase_service import build_badcase_advice
+from animal_gs_agent.services.debug_service import build_debug_diagnosis
 
 jobs_store: dict[str, JobStatusResponse] = {}
 
@@ -687,6 +688,7 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
             "status": "running",
             "execution_error": None,
             "execution_error_detail": None,
+            "debug_diagnosis": None,
             "events": _append_event(job, phase="running", message="workflow execution started"),
             "decision_trace": _append_decision(
                 job,
@@ -733,6 +735,12 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                 "status": "failed",
                 "execution_error": error_code,
                 "execution_error_detail": error_detail,
+                "debug_diagnosis": build_debug_diagnosis(
+                    error_code=error_code,
+                    error_message=error_detail,
+                    attempt=1,
+                    max_attempts=max(1, _int_env("ANIMAL_GS_AGENT_RUN_QUEUE_MAX_ATTEMPTS", 3)),
+                ),
                 "events": _append_event(
                     running_job,
                     phase="failed",
@@ -767,6 +775,12 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                     "status": "failed",
                     "execution_error": exc.code,
                     "execution_error_detail": exc.message,
+                    "debug_diagnosis": build_debug_diagnosis(
+                        error_code=exc.code,
+                        error_message=exc.message,
+                        attempt=1,
+                        max_attempts=max(1, _int_env("ANIMAL_GS_AGENT_RUN_QUEUE_MAX_ATTEMPTS", 3)),
+                    ),
                     "events": _append_event(
                         running_job,
                         phase="failed",
@@ -837,6 +851,12 @@ def run_job(job_id: str, workflow_executor=None, workflow_output_parser=None) ->
                         "status": "failed",
                         "execution_error": "workflow_output_parse_error",
                         "execution_error_detail": "failed to parse fixed workflow outputs",
+                        "debug_diagnosis": build_debug_diagnosis(
+                            error_code="workflow_output_parse_error",
+                            error_message="failed to parse fixed workflow outputs",
+                            attempt=1,
+                            max_attempts=max(1, _int_env("ANIMAL_GS_AGENT_RUN_QUEUE_MAX_ATTEMPTS", 3)),
+                        ),
                         "events": _append_event(
                             running_job,
                             phase="failed",

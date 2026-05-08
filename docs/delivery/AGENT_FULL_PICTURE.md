@@ -162,6 +162,19 @@ QC governance notes:
     - `fallback_plan.reason`
     - `fallback_plan.created_by`
     - `fallback_plan.created_at`
+- Debug-agent style diagnosis now includes:
+  - failure category classification:
+    - `environment`
+    - `data`
+    - `code`
+    - `resource`
+  - retry policy recommendation payload:
+    - `retryable`
+    - `suggested_retry_decision` (`retry|escalate`)
+    - `suggested_action`
+    - `attempt` and `max_attempts`
+    - `escalate_immediately`
+  - runtime job failure payload includes `debug_diagnosis`
 
 ## 2.5 Slurm Awareness
 

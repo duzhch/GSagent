@@ -726,3 +726,36 @@
     - `AC-P1-03-02=PASS`
     - `AC-P1-03-03=PASS`
     - `AC-P1-04-03=PASS`
+
+### Session 35
+
+- Implemented `E-P2-02` debug-agent baseline:
+  - `F-P2-02-01` failure classifier
+  - `F-P2-02-02` repair suggestion + retry policy
+  - `F-P2-02-03` escalation stop logic
+- Added schemas:
+  - `src/animal_gs_agent/schemas/debug.py`
+    - `DebugDiagnosis`
+- Added service:
+  - `src/animal_gs_agent/services/debug_service.py`
+    - `classify_failure_category(...)`
+    - `build_debug_diagnosis(...)`
+    - `should_escalate_after_attempt(...)`
+- Integrated into runtime:
+  - `JobSubmissionResponse` / `JobStatusResponse` now expose `debug_diagnosis`
+  - `run_job(...)` now attaches `debug_diagnosis` for:
+    - preflight validation failures
+    - workflow runtime failures
+    - workflow output parse failures
+- Added tests:
+  - `tests/unit/p2_failure_classifier.py`
+  - `tests/unit/api/test_job_run.py::test_run_job_transitions_to_failed_when_workflow_runtime_errors`
+- Added evidence docs:
+  - `tests/integration/p2_retry_policy.md`
+  - `tests/risk/p2_escalation_stop.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md`
+    - `AC-P2-02-01=PASS`
+    - `AC-P2-02-02=PASS`
+    - `AC-P2-02-03=PASS`

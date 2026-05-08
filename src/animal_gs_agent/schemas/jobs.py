@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from animal_gs_agent.schemas.dataset_profile import DatasetProfile
+from animal_gs_agent.schemas.debug import DebugDiagnosis
 from animal_gs_agent.schemas.audit_claim import AuditCheckResult, ClaimEvidenceItem
 from animal_gs_agent.schemas.badcase import BadcaseAdvice
 from animal_gs_agent.schemas.knowledge import RecommendationCitation
@@ -108,6 +109,7 @@ class JobSubmissionResponse(BaseModel):
     badcase_advice: BadcaseAdvice | None = None
     execution_error: str | None = None
     execution_error_detail: str | None = None
+    debug_diagnosis: DebugDiagnosis | None = None
     workflow_backend: str | None = None
     workflow_result_dir: str | None = None
     workflow_submission_id: str | None = None
@@ -140,6 +142,7 @@ class JobStatusResponse(BaseModel):
     badcase_advice: BadcaseAdvice | None = None
     execution_error: str | None = None
     execution_error_detail: str | None = None
+    debug_diagnosis: DebugDiagnosis | None = None
     workflow_backend: str | None = None
     workflow_result_dir: str | None = None
     workflow_submission_id: str | None = None

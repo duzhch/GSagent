@@ -157,6 +157,8 @@ def test_run_job_transitions_to_failed_when_workflow_runtime_errors(monkeypatch,
     assert body["status"] == "failed"
     assert body["execution_error"] == "workflow_runtime_error"
     assert body["execution_error_detail"] == "nextflow failed with exit code 1"
+    assert body["debug_diagnosis"]["category"] == "code"
+    assert body["debug_diagnosis"]["suggested_retry_decision"] == "retry"
 
 
 def test_run_job_stays_running_when_submitted_to_slurm(monkeypatch, tmp_path) -> None:

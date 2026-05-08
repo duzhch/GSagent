@@ -73,9 +73,9 @@
 | `F-P2-01-01` | `AC-P2-01-01` | `TC-P2-01-01` | IT | `tests/integration/p2_baseline_bench.md` | Dev+QA | TBD |
 | `F-P2-01-02` | `AC-P2-01-02` | `TC-P2-01-02` | IT | `tests/integration/p2_ablation_bench.md` | QA | TBD |
 | `F-P2-01-03` | `AC-P2-01-03` | `TC-P2-01-03` | E2E | `tests/e2e/p2_plot_export.md` | QA | TBD |
-| `F-P2-02-01` | `AC-P2-02-01` | `TC-P2-02-01` | UT | `tests/unit/p2_failure_classifier.py` | Dev | TBD |
-| `F-P2-02-02` | `AC-P2-02-02` | `TC-P2-02-02` | IT | `tests/integration/p2_retry_policy.md` | QA | TBD |
-| `F-P2-02-03` | `AC-P2-02-03` | `TC-P2-02-03` | Risk | `tests/risk/p2_escalation_stop.md` | QA | TBD |
+| `F-P2-02-01` | `AC-P2-02-01` | `TC-P2-02-01` | UT | `tests/unit/p2_failure_classifier.py` | Dev | PASS |
+| `F-P2-02-02` | `AC-P2-02-02` | `TC-P2-02-02` | IT | `tests/integration/p2_retry_policy.md` | QA | PASS |
+| `F-P2-02-03` | `AC-P2-02-03` | `TC-P2-02-03` | Risk | `tests/risk/p2_escalation_stop.md` | QA | PASS |
 | `F-P2-03-01` | `AC-P2-03-01` | `TC-P2-03-01` | IT | `tests/integration/p2_authz_scope.md` | Dev+QA | TBD |
 | `F-P2-03-02` | `AC-P2-03-02` | `TC-P2-03-02` | IT | `tests/integration/p2_quota_control.md` | QA | TBD |
 | `F-P2-03-03` | `AC-P2-03-03` | `TC-P2-03-03` | E2E | `tests/e2e/p2_observability_audit.md` | QA | TBD |
