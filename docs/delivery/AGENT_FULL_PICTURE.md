@@ -134,6 +134,14 @@ QC governance notes:
     - `trials_to_95_best`
     - `invalid_trial_rate`
     - invalid reason drilldown and `no_valid_trials` fallback
+- Knowledge agent support now includes:
+  - multi-source knowledge connector:
+    - historical task summaries
+    - SOP files (env-path configured)
+    - literature files (env-path configured)
+  - lexical retrieval + rerank for recommendation queries
+  - report-time recommendation citations (`knowledge_citations`)
+  - explicit conflict marking when positive and negative evidence coexist
 
 ## 2.5 Slurm Awareness
 

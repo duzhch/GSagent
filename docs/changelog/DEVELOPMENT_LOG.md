@@ -634,3 +634,33 @@
 - Updated delivery matrix:
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md`
   - set `AC-P0-02-02`..`AC-P0-02-07` to `PASS`
+
+### Session 32
+
+- Implemented `E-P1-01` knowledge-agent slice:
+  - `F-P1-01-01` knowledge connector
+  - `F-P1-01-02` retrieval + rerank
+  - `F-P1-01-03` citation conflict annotation
+- Added schemas:
+  - `src/animal_gs_agent/schemas/knowledge.py`
+    - `KnowledgeDocument`
+    - `RetrievedEvidence`
+    - `RecommendationCitation`
+- Added knowledge service:
+  - `src/animal_gs_agent/services/knowledge_service.py`
+    - `build_knowledge_documents(...)`
+    - `retrieve_knowledge_evidence(...)`
+    - `build_recommendation_citations(...)`
+- Extended report schema/service:
+  - `knowledge_citations` in `JobReportResponse`
+  - report generation now attaches recommendation citations and conflict notes
+- Added tests:
+  - `tests/unit/p1_knowledge_rag.py`
+  - `tests/unit/api/test_job_report.py::test_job_report_includes_knowledge_citations`
+- Added evidence docs:
+  - `tests/integration/p1_knowledge_connector.md`
+  - `tests/integration/p1_retrieval_rerank.md`
+  - `tests/risk/p1_evidence_conflict.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P1-01-01=PASS`, `AC-P1-01-02=PASS`, `AC-P1-01-03=PASS`)

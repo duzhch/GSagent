@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from animal_gs_agent.schemas.dataset_profile import DatasetProfile
 from animal_gs_agent.schemas.audit_claim import AuditCheckResult, ClaimEvidenceItem
+from animal_gs_agent.schemas.knowledge import RecommendationCitation
 from animal_gs_agent.schemas.model_pool import ModelPoolPlan
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
 from animal_gs_agent.schemas.trial_strategy import TrialPlanResult
@@ -147,6 +148,7 @@ class JobReportResponse(BaseModel):
     top_candidates: list[RankedCandidate] = Field(default_factory=list)
     claim_evidence_map: list[ClaimEvidenceItem] = Field(default_factory=list)
     audit_checks: list[AuditCheckResult] = Field(default_factory=list)
+    knowledge_citations: list[RecommendationCitation] = Field(default_factory=list)
 
 
 class JobDecisionTraceResponse(BaseModel):

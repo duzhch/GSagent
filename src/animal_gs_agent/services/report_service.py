@@ -1,7 +1,27 @@
 """Agent-facing report generation service."""
 
+import os
+
 from animal_gs_agent.schemas.jobs import JobReportResponse, JobStatusResponse
 from animal_gs_agent.services.audit_service import build_claim_evidence_map, run_audit_checks
+from animal_gs_agent.services.knowledge_service import (
+    build_knowledge_documents,
+    build_recommendation_citations,
+)
+
+
+def _csv_env_paths(name: str) -> list[str]:
+    raw = os.getenv(name, "")
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.getenv(name, str(default))
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return max(1, value)
 
 
 def build_job_report(job: JobStatusResponse) -> JobReportResponse:
@@ -29,6 +49,21 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
 
     claim_evidence_map = build_claim_evidence_map(job)
     audit_checks = run_audit_checks(job)
+    from animal_gs_agent.services.job_service import jobs_store
+
+    history_jobs = [item for item in jobs_store.values() if item.status == "completed"]
+    sop_paths = _csv_env_paths("ANIMAL_GS_AGENT_KNOWLEDGE_SOP_PATHS")
+    literature_paths = _csv_env_paths("ANIMAL_GS_AGENT_KNOWLEDGE_LITERATURE_PATHS")
+    knowledge_docs = build_knowledge_documents(
+        history_jobs=history_jobs,
+        sop_paths=sop_paths,
+        literature_paths=literature_paths,
+    )
+    knowledge_citations = build_recommendation_citations(
+        recommendations=recommendations,
+        documents=knowledge_docs,
+        top_k_per_recommendation=_int_env("ANIMAL_GS_AGENT_KNOWLEDGE_TOP_K", 2),
+    )
 
     return JobReportResponse(
         job_id=job.job_id,
@@ -38,4 +73,5 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
         top_candidates=job.workflow_summary.top_candidates,
         claim_evidence_map=claim_evidence_map,
         audit_checks=audit_checks,
+        knowledge_citations=knowledge_citations,
     )
