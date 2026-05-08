@@ -50,5 +50,5 @@
 
 - [x] Step 1: Run targeted tests for new service + CLI.
 - [x] Step 2: Run `pytest tests/unit -q`.
-- [ ] Step 3: Commit with Feature/Story mapping message.
-- [ ] Step 4: Push to `origin/main`.
+- [x] Step 3: Commit with Feature/Story mapping message.
+- [x] Step 4: Push to `origin/main`.
