@@ -175,6 +175,14 @@ QC governance notes:
     - `attempt` and `max_attempts`
     - `escalate_immediately`
   - runtime job failure payload includes `debug_diagnosis`
+- Benchmark/ablation output now includes:
+  - baseline benchmark comparison across:
+    - `single_agent`
+    - `react_agent`
+    - `multi_agent`
+  - ablation result list with delta metrics and impact labels
+  - plot-ready export artifact:
+    - `benchmark_plot_artifact` (`csv`)
 
 ## 2.5 Slurm Awareness
 

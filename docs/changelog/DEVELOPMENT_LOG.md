@@ -759,3 +759,39 @@
     - `AC-P2-02-01=PASS`
     - `AC-P2-02-02=PASS`
     - `AC-P2-02-03=PASS`
+
+### Session 36
+
+- Implemented `E-P2-01` benchmark and ablation workbench:
+  - `F-P2-01-01` baseline benchmark orchestrator
+  - `F-P2-01-02` ablation benchmark orchestrator
+  - `F-P2-01-03` plot-ready artifact export
+- Added schemas:
+  - `src/animal_gs_agent/schemas/benchmark.py`
+    - baseline arm result
+    - ablation item
+    - plot export artifact
+- Added service:
+  - `src/animal_gs_agent/services/benchmark_service.py`
+    - `build_baseline_benchmark(...)`
+    - `build_ablation_benchmark(...)`
+    - `export_plot_artifact(...)`
+- Report integration:
+  - `JobReportResponse` now includes:
+    - `benchmark_baseline`
+    - `benchmark_ablation`
+    - `benchmark_plot_artifact`
+  - report service now builds and attaches all benchmark outputs
+- Added tests:
+  - `tests/unit/p2_benchmark_service.py`
+  - `tests/unit/api/test_job_report.py::test_job_report_includes_benchmark_and_plot_export`
+- Added evidence docs:
+  - `tests/integration/p2_baseline_bench.md`
+  - `tests/integration/p2_ablation_bench.md`
+  - `tests/e2e/p2_plot_export.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md`
+    - `AC-P2-01-01=PASS`
+    - `AC-P2-01-02=PASS`
+    - `AC-P2-01-03=PASS`

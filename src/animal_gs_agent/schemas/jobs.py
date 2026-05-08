@@ -8,6 +8,7 @@ from animal_gs_agent.schemas.dataset_profile import DatasetProfile
 from animal_gs_agent.schemas.debug import DebugDiagnosis
 from animal_gs_agent.schemas.audit_claim import AuditCheckResult, ClaimEvidenceItem
 from animal_gs_agent.schemas.badcase import BadcaseAdvice
+from animal_gs_agent.schemas.benchmark import AblationBenchmarkItem, BaselineBenchmarkReport, PlotExportArtifact
 from animal_gs_agent.schemas.knowledge import RecommendationCitation
 from animal_gs_agent.schemas.model_pool import ModelPoolPlan
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
@@ -175,6 +176,9 @@ class JobReportResponse(BaseModel):
     role_reports: list[RoleSpecificReport] = Field(default_factory=list)
     role_report_alignment_ok: bool = True
     role_report_alignment_note: str | None = None
+    benchmark_baseline: BaselineBenchmarkReport | None = None
+    benchmark_ablation: list[AblationBenchmarkItem] = Field(default_factory=list)
+    benchmark_plot_artifact: PlotExportArtifact | None = None
 
 
 class JobDecisionTraceResponse(BaseModel):

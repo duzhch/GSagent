@@ -390,3 +390,63 @@ def test_job_report_includes_role_specific_reports_with_consistent_conclusion(mo
     for item in role_reports:
         assert "audit" in item["audit_summary"].lower()
         assert item["risk_summary"] != ""
+
+
+def test_job_report_includes_benchmark_and_plot_export(monkeypatch, tmp_path) -> None:
+    _patch_llm(monkeypatch)
+
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text("animal_id,daily_gain,sex\nA1,1.2,M\n", encoding="utf-8")
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_BENCHMARK_OUTPUT_ROOT", str(tmp_path / "benchmarks"))
+
+    def fake_execute_workflow(job):
+        return WorkflowExecutionResult(
+            backend="native_nextflow",
+            command=["nextflow", "run", "main.nf"],
+            result_dir=f"/tmp/{job.job_id}",
+        )
+
+    def fake_parse_outputs(result_dir, trait_name, top_n=10):
+        return WorkflowSummary(
+            trait_name=trait_name,
+            total_candidates=10,
+            top_candidates=[RankedCandidate(individual_id="A1001", gebv=1.2345, rank=1)],
+            model_metrics={"metric::pearson": "0.71", "metric::rmse": "0.18"},
+            source_files=["gblup/gebv_predictions.csv"],
+        )
+
+    monkeypatch.setattr("animal_gs_agent.api.routes.jobs.execute_fixed_workflow", fake_execute_workflow)
+    monkeypatch.setattr("animal_gs_agent.api.routes.jobs.parse_workflow_outputs", fake_parse_outputs)
+
+    client = TestClient(create_app())
+    submit = client.post(
+        "/jobs",
+        json={
+            "user_message": "Run genomic selection for daily_gain",
+            "trait_name": "daily_gain",
+            "phenotype_path": str(phenotype_file),
+            "genotype_path": str(genotype_file),
+        },
+    )
+    job_id = submit.json()["job_id"]
+    run_resp = client.post(f"/jobs/{job_id}/run")
+    assert run_resp.status_code == 200
+    assert run_resp.json()["status"] == "completed"
+
+    report_resp = client.get(f"/jobs/{job_id}/report")
+    assert report_resp.status_code == 200
+    body = report_resp.json()
+
+    baseline = body["benchmark_baseline"]
+    assert len(baseline["compared_arms"]) == 3
+    assert baseline["winner_arm_id"] in {"single_agent", "react_agent", "multi_agent"}
+
+    ablation = body["benchmark_ablation"]
+    assert len(ablation) >= 2
+
+    plot_artifact = body["benchmark_plot_artifact"]
+    assert plot_artifact["format"] == "csv"
+    assert plot_artifact["artifact_path"].endswith(".csv")
