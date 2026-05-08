@@ -59,12 +59,12 @@
 | `F-P1-02-01` | `AC-P1-02-01` | `TC-P1-02-01` | UT | `tests/unit/p1_badcase_schema.py` | Dev | PASS |
 | `F-P1-02-02` | `AC-P1-02-02` | `TC-P1-02-02` | IT | `tests/integration/p1_badcase_similarity.md` | QA | PASS |
 | `F-P1-02-03` | `AC-P1-02-03` | `TC-P1-02-03` | E2E | `tests/e2e/p1_preventive_actions.md` | QA | PASS |
-| `F-P1-03-01` | `AC-P1-03-01` | `TC-P1-03-01` | IT | `tests/integration/p1_technical_report.md` | Dev+QA | TBD |
-| `F-P1-03-02` | `AC-P1-03-02` | `TC-P1-03-02` | IT | `tests/integration/p1_decision_report.md` | QA | TBD |
-| `F-P1-03-03` | `AC-P1-03-03` | `TC-P1-03-03` | IT | `tests/integration/p1_management_report.md` | QA | TBD |
+| `F-P1-03-01` | `AC-P1-03-01` | `TC-P1-03-01` | IT | `tests/integration/p1_technical_report.md` | Dev+QA | PASS |
+| `F-P1-03-02` | `AC-P1-03-02` | `TC-P1-03-02` | IT | `tests/integration/p1_decision_report.md` | QA | PASS |
+| `F-P1-03-03` | `AC-P1-03-03` | `TC-P1-03-03` | IT | `tests/integration/p1_management_report.md` | QA | PASS |
 | `F-P1-04-01` | `AC-P1-04-01` | `TC-P1-04-01` | Risk | `tests/integration/phase_a_unified_acceptance_latest.md` | Dev+QA | PASS |
 | `F-P1-04-02` | `AC-P1-04-02` | `TC-P1-04-02` | IT | `tests/integration/phase_a_unified_acceptance_latest.md` | Dev+QA | PASS |
-| `F-P1-04-03` | `AC-P1-04-03` | `TC-P1-04-03` | E2E | `tests/e2e/p1_abort_and_fallback.md` | QA | TBD |
+| `F-P1-04-03` | `AC-P1-04-03` | `TC-P1-04-03` | E2E | `tests/e2e/p1_abort_and_fallback.md` | QA | PASS |
 
 ## 4. P2 追踪矩阵
 

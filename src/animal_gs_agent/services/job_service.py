@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from animal_gs_agent.schemas.jobs import (
     DecisionTraceNode,
+    FallbackPlan,
     JobEvent,
     JobStatusResponse,
     JobSubmissionRequest,
@@ -339,6 +340,7 @@ def mark_job_queued_for_worker(job_id: str) -> JobStatusResponse | None:
             "escalation_required": False,
             "escalation_reason": None,
             "escalation_requested_at": None,
+            "fallback_plan": None,
             "events": _append_event(job, phase="queued", message="queued for async worker execution"),
         }
     )
@@ -362,6 +364,7 @@ def mark_job_escalated(job_id: str, reason: str, *, evidence: list[str] | None =
             "escalation_resolution": None,
             "escalation_resolved_by": None,
             "escalation_resolved_at": None,
+            "fallback_plan": None,
             "execution_error": "worker_retry_budget_exhausted",
             "execution_error_detail": f"manual escalation required: {reason}",
             "events": _append_event(
@@ -407,6 +410,7 @@ def resolve_job_escalation_retry(job_id: str, approver: str, reason: str) -> Job
             "escalation_resolution": "retry",
             "escalation_resolved_by": approver,
             "escalation_resolved_at": now,
+            "fallback_plan": None,
             "execution_error": None,
             "execution_error_detail": None,
             "events": _append_event(
@@ -451,6 +455,12 @@ def resolve_job_escalation_abort(job_id: str, approver: str, reason: str) -> Job
             "escalation_resolution": "abort",
             "escalation_resolved_by": approver,
             "escalation_resolved_at": now,
+            "fallback_plan": FallbackPlan(
+                strategy="manual_review_with_fixed_pipeline_fallback",
+                reason=reason,
+                created_by=approver,
+                created_at=now,
+            ),
             "execution_error": "manual_abort_after_escalation",
             "execution_error_detail": f"aborted by {approver}: {reason}",
             "events": _append_event(

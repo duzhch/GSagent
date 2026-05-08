@@ -308,3 +308,85 @@ def test_job_report_includes_knowledge_citations(monkeypatch, tmp_path) -> None:
     assert len(citations) >= 1
     assert "covariate=batch" in citations[0]["recommendation"]
     assert len(citations[0]["evidence"]) >= 1
+
+
+def test_job_report_includes_role_specific_reports_with_consistent_conclusion(monkeypatch, tmp_path) -> None:
+    _patch_llm(monkeypatch)
+
+    phenotype_file = tmp_path / "pheno.csv"
+    phenotype_file.write_text(
+        "\n".join(
+            [
+                "animal_id,daily_gain,batch",
+                "A1,1.0,B1",
+                "A2,1.1,B1",
+                "A3,6.0,B2",
+                "A4,6.2,B2",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    genotype_file = tmp_path / "geno.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    sop_path = tmp_path / "sop.md"
+    sop_path.write_text("SOP: For significant batch effect, add covariate=batch.", encoding="utf-8")
+    literature_path = tmp_path / "literature.txt"
+    literature_path.write_text("Paper: covariate=batch can reduce bias under batch drift.", encoding="utf-8")
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PHENO_BATCH_COLUMN", "batch")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_PHENO_BATCH_EFFECT_MIN_ETA2", "0.20")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_KNOWLEDGE_SOP_PATHS", str(sop_path))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_KNOWLEDGE_LITERATURE_PATHS", str(literature_path))
+
+    def fake_execute_workflow(job):
+        return WorkflowExecutionResult(
+            backend="native_nextflow",
+            command=["nextflow", "run", "main.nf"],
+            result_dir=f"/tmp/{job.job_id}",
+        )
+
+    def fake_parse_outputs(result_dir, trait_name, top_n=10):
+        return WorkflowSummary(
+            trait_name=trait_name,
+            total_candidates=10,
+            top_candidates=[RankedCandidate(individual_id="A1001", gebv=1.2345, rank=1)],
+            model_metrics={"metric::pearson": "0.72", "metric::rmse": "0.16"},
+            source_files=["gblup/gebv_predictions.csv"],
+        )
+
+    monkeypatch.setattr("animal_gs_agent.api.routes.jobs.execute_fixed_workflow", fake_execute_workflow)
+    monkeypatch.setattr("animal_gs_agent.api.routes.jobs.parse_workflow_outputs", fake_parse_outputs)
+
+    client = TestClient(create_app())
+    submit = client.post(
+        "/jobs",
+        json={
+            "user_message": "Run genomic selection for daily_gain",
+            "trait_name": "daily_gain",
+            "phenotype_path": str(phenotype_file),
+            "genotype_path": str(genotype_file),
+        },
+    )
+    job_id = submit.json()["job_id"]
+    run_resp = client.post(f"/jobs/{job_id}/run")
+    assert run_resp.status_code == 200
+    assert run_resp.json()["status"] == "completed"
+
+    report_resp = client.get(f"/jobs/{job_id}/report")
+    assert report_resp.status_code == 200
+    body = report_resp.json()
+
+    role_reports = body["role_reports"]
+    assert len(role_reports) == 3
+    roles = {item["role"] for item in role_reports}
+    assert roles == {"technical", "decision", "management"}
+
+    conclusions = {item["conclusion"] for item in role_reports}
+    assert len(conclusions) == 1
+    assert body["role_report_alignment_ok"] is True
+
+    for item in role_reports:
+        assert "audit" in item["audit_summary"].lower()
+        assert item["risk_summary"] != ""

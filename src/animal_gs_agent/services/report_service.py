@@ -2,7 +2,7 @@
 
 import os
 
-from animal_gs_agent.schemas.jobs import JobReportResponse, JobStatusResponse
+from animal_gs_agent.schemas.jobs import JobReportResponse, JobStatusResponse, RoleSpecificReport
 from animal_gs_agent.services.audit_service import build_claim_evidence_map, run_audit_checks
 from animal_gs_agent.services.knowledge_service import (
     build_knowledge_documents,
@@ -22,6 +22,61 @@ def _int_env(name: str, default: int) -> int:
     except ValueError:
         return default
     return max(1, value)
+
+
+def _build_role_reports(
+    *,
+    job: JobStatusResponse,
+    top_preview: str,
+    recommendations: list[str],
+    risk_tags: list[str],
+    audit_checks,
+) -> tuple[list[RoleSpecificReport], bool, str | None]:
+    top1 = job.workflow_summary.top_candidates[0] if job.workflow_summary and job.workflow_summary.top_candidates else None
+    top1_text = f"{top1.individual_id} (GEBV={top1.gebv:.4f})" if top1 else "no candidate"
+    shared_conclusion = f"Top recommendation is {top1_text} for trait `{job.trait_name}`."
+    audit_risk_count = sum(1 for item in audit_checks if item.status == "risk")
+    audit_summary = f"audit: {audit_risk_count} risk checks, {len(audit_checks) - audit_risk_count} pass checks"
+    risk_text = ", ".join(risk_tags) if risk_tags else "none"
+    recommendation_text = " | ".join(recommendations) if recommendations else "none"
+    risk_summary = f"risk tags: {risk_text}; recommendation: {recommendation_text}"
+
+    reports = [
+        RoleSpecificReport(
+            role="technical",
+            conclusion=shared_conclusion,
+            summary=(
+                f"Model metrics: {job.workflow_summary.model_metrics}. "
+                f"Top candidates preview: {top_preview}."
+            ),
+            audit_summary=audit_summary,
+            risk_summary=risk_summary,
+        ),
+        RoleSpecificReport(
+            role="decision",
+            conclusion=shared_conclusion,
+            summary=(
+                f"Decision basis combines workflow ranking and recommendation signals. "
+                f"Selected top candidate: {top1_text}."
+            ),
+            audit_summary=audit_summary,
+            risk_summary=risk_summary,
+        ),
+        RoleSpecificReport(
+            role="management",
+            conclusion=shared_conclusion,
+            summary=(
+                "Execution completed with auditable trail and evidence-linked recommendation. "
+                f"Outcome summary: {top_preview}."
+            ),
+            audit_summary=audit_summary,
+            risk_summary=risk_summary,
+        ),
+    ]
+    unique_conclusions = {item.conclusion for item in reports}
+    alignment_ok = len(unique_conclusions) == 1
+    alignment_note = None if alignment_ok else "role reports are not aligned on final conclusion"
+    return reports, alignment_ok, alignment_note
 
 
 def build_job_report(job: JobStatusResponse) -> JobReportResponse:
@@ -64,6 +119,13 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
         documents=knowledge_docs,
         top_k_per_recommendation=_int_env("ANIMAL_GS_AGENT_KNOWLEDGE_TOP_K", 2),
     )
+    role_reports, alignment_ok, alignment_note = _build_role_reports(
+        job=job,
+        top_preview=top_preview,
+        recommendations=recommendations,
+        risk_tags=risk_tags,
+        audit_checks=audit_checks,
+    )
 
     return JobReportResponse(
         job_id=job.job_id,
@@ -74,4 +136,7 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
         claim_evidence_map=claim_evidence_map,
         audit_checks=audit_checks,
         knowledge_citations=knowledge_citations,
+        role_reports=role_reports,
+        role_report_alignment_ok=alignment_ok,
+        role_report_alignment_note=alignment_note,
     )

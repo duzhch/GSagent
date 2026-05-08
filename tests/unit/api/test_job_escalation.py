@@ -102,6 +102,9 @@ def test_abort_escalated_job_records_manual_abort(monkeypatch, tmp_path) -> None
     assert body["escalation_required"] is False
     assert body["execution_error"] == "manual_abort_after_escalation"
     assert body["decision_trace"][-1]["action"] == "approve_escalation_abort"
+    assert body["fallback_plan"]["strategy"] == "manual_review_with_fixed_pipeline_fallback"
+    assert body["fallback_plan"]["reason"] == "stop this run"
+    assert body["fallback_plan"]["created_by"] == "qa_reviewer"
 
 
 def test_retry_non_escalated_job_returns_409(monkeypatch, tmp_path) -> None:

@@ -81,6 +81,21 @@ class JobArtifactsResponse(BaseModel):
     artifacts: list[JobArtifact] = Field(default_factory=list)
 
 
+class FallbackPlan(BaseModel):
+    strategy: Literal["manual_review_with_fixed_pipeline_fallback"]
+    reason: str
+    created_by: str
+    created_at: str
+
+
+class RoleSpecificReport(BaseModel):
+    role: Literal["technical", "decision", "management"]
+    conclusion: str
+    summary: str
+    audit_summary: str
+    risk_summary: str
+
+
 class JobSubmissionResponse(BaseModel):
     job_id: str
     status: Literal["queued", "running", "completed", "failed"]
@@ -103,6 +118,7 @@ class JobSubmissionResponse(BaseModel):
     escalation_resolution: Literal["retry", "abort"] | None = None
     escalation_resolved_by: str | None = None
     escalation_resolved_at: str | None = None
+    fallback_plan: FallbackPlan | None = None
     qc_override_applied: bool = False
     qc_override_by: str | None = None
     qc_override_reason: str | None = None
@@ -134,6 +150,7 @@ class JobStatusResponse(BaseModel):
     escalation_resolution: Literal["retry", "abort"] | None = None
     escalation_resolved_by: str | None = None
     escalation_resolved_at: str | None = None
+    fallback_plan: FallbackPlan | None = None
     qc_override_applied: bool = False
     qc_override_by: str | None = None
     qc_override_reason: str | None = None
@@ -152,6 +169,9 @@ class JobReportResponse(BaseModel):
     claim_evidence_map: list[ClaimEvidenceItem] = Field(default_factory=list)
     audit_checks: list[AuditCheckResult] = Field(default_factory=list)
     knowledge_citations: list[RecommendationCitation] = Field(default_factory=list)
+    role_reports: list[RoleSpecificReport] = Field(default_factory=list)
+    role_report_alignment_ok: bool = True
+    role_report_alignment_note: str | None = None
 
 
 class JobDecisionTraceResponse(BaseModel):

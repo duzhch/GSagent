@@ -123,6 +123,15 @@ QC governance notes:
   - `leakage_check` with `pass|risk`
   - `metric_consistency_check` with `pass|risk`
   - report payload includes `audit_checks`
+- Multi-role reporting now includes:
+  - role-specific report slices in report payload:
+    - `technical`
+    - `decision`
+    - `management`
+  - shared conclusion alignment flags:
+    - `role_report_alignment_ok`
+    - `role_report_alignment_note`
+  - each role report includes audit summary and risk summary
 - Metric service now provides:
   - trial-level `Pearson` and `RMSE`
   - grouped aggregate metrics by `(population, trait, model)`
@@ -147,6 +156,12 @@ QC governance notes:
   - similarity scoring across trait/population/risk context
   - high-similarity hit flag with matched historical cases
   - preventive action generation from historical risk tags and recommendations
+- Escalation abort fallback now includes:
+  - explicit fallback plan in job state:
+    - `fallback_plan.strategy=manual_review_with_fixed_pipeline_fallback`
+    - `fallback_plan.reason`
+    - `fallback_plan.created_by`
+    - `fallback_plan.created_at`
 
 ## 2.5 Slurm Awareness
 

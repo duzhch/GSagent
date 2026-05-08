@@ -693,3 +693,36 @@
 - Updated delivery docs/matrix:
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P1-02-01=PASS`, `AC-P1-02-02=PASS`, `AC-P1-02-03=PASS`)
+
+### Session 34
+
+- Implemented `E-P1-03` multi-role report templates:
+  - report schema extended with:
+    - `role_reports`
+    - `role_report_alignment_ok`
+    - `role_report_alignment_note`
+  - role reports generated for:
+    - `technical`
+    - `decision`
+    - `management`
+  - all role reports share one final conclusion and each includes audit/risk summaries
+- Implemented `F-P1-04-03` forced-abort rollback output:
+  - job schema extended with `fallback_plan`
+  - escalation abort now writes fallback metadata:
+    - strategy: `manual_review_with_fixed_pipeline_fallback`
+    - reason/approver/timestamp
+- Added tests:
+  - `tests/unit/api/test_job_report.py::test_job_report_includes_role_specific_reports_with_consistent_conclusion`
+  - `tests/unit/api/test_job_escalation.py::test_abort_escalated_job_records_manual_abort`
+- Added evidence docs:
+  - `tests/integration/p1_technical_report.md`
+  - `tests/integration/p1_decision_report.md`
+  - `tests/integration/p1_management_report.md`
+  - `tests/e2e/p1_abort_and_fallback.md`
+- Updated delivery docs/matrix:
+  - `docs/delivery/AGENT_FULL_PICTURE.md`
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md`
+    - `AC-P1-03-01=PASS`
+    - `AC-P1-03-02=PASS`
+    - `AC-P1-03-03=PASS`
+    - `AC-P1-04-03=PASS`
