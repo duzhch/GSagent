@@ -617,3 +617,20 @@
 - Updated delivery docs/matrix:
   - `docs/delivery/AGENT_FULL_PICTURE.md`
   - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md` (`AC-P0-05-05=PASS`, `AC-P0-05-06=PASS`)
+
+### Session 31
+
+- Closed remaining `E-P0-02` acceptance rows by verification sweep:
+  - `F-P0-02-01`: `AC-P0-02-02`, `AC-P0-02-03`
+  - `F-P0-02-02`: `AC-P0-02-04`, `AC-P0-02-05`
+  - `F-P0-02-03`: `AC-P0-02-06`, `AC-P0-02-07`
+- Verified with targeted unit/API checks:
+  - `tests/unit/api/test_job_qc_override.py::test_qc_override_requeues_blocked_job`
+  - `tests/unit/api/test_job_run.py::test_run_job_blocks_before_workflow_when_qc_risk_is_high`
+  - `tests/unit/api/test_job_run.py::test_run_job_carries_population_risk_tags_into_execution_stage`
+  - `tests/unit/api/test_job_report.py::test_job_report_includes_covariate_recommendation_when_batch_effect_significant`
+  - `tests/unit/services/test_dataset_profile_service.py::test_build_dataset_profile_parses_population_structure_and_outliers`
+  - `tests/unit/services/test_dataset_profile_service.py::test_build_dataset_profile_generates_phenotype_outlier_and_batch_diagnostics`
+- Updated delivery matrix:
+  - `docs/delivery/ACCEPTANCE_TRACE_MATRIX.md`
+  - set `AC-P0-02-02`..`AC-P0-02-07` to `PASS`
