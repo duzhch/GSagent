@@ -43,4 +43,4 @@ def test_parser_contains_expected_subcommands() -> None:
     parser = build_parser()
     action = next(item for item in parser._actions if item.dest == "command")
     subcommands = set(action.choices.keys())
-    assert {"preflight", "serve", "worker", "print-env"}.issubset(subcommands)
+    assert {"preflight", "serve", "worker", "print-env", "llm-check"}.issubset(subcommands)

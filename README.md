@@ -95,9 +95,17 @@ Then run from anywhere and bind to a target working directory:
 
 ```bash
 gsagent preflight --workdir /path/to/project
+gsagent llm-check --workdir /path/to/project
 gsagent serve --workdir /path/to/project --host 0.0.0.0 --port 8000
 gsagent worker --workdir /path/to/project
 ```
+
+`gsagent serve` defaults to interactive startup check for LLM API availability.
+You can control behavior with:
+
+- `--llm-check auto` (default, asks user)
+- `--llm-check always` (always run check)
+- `--llm-check skip` (skip check)
 
 See runtime bundle tooling:
 

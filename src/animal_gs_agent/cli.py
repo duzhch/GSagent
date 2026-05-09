@@ -11,6 +11,8 @@ import time
 
 import uvicorn
 
+from animal_gs_agent.config import LLMSettings, get_settings
+from animal_gs_agent.llm.client import OpenAICompatibleLLMClient
 from animal_gs_agent.services.worker_service import process_next_queued_job
 
 
@@ -67,6 +69,68 @@ def _required_env_missing() -> list[str]:
     return missing
 
 
+def _prompt_text(label: str, default: str | None = None) -> str:
+    suffix = f" [{default}]" if default else ""
+    raw = input(f"{label}{suffix}: ").strip()
+    if raw:
+        return raw
+    return default or ""
+
+
+def _collect_llm_settings(interactive: bool) -> LLMSettings:
+    current = get_settings().llm
+    base_url = current.base_url or ""
+    api_key = current.api_key or ""
+    model = current.model or ""
+
+    if interactive:
+        if not base_url:
+            base_url = _prompt_text("LLM base_url", "https://api.deepseek.com")
+        if not api_key:
+            api_key = _prompt_text("LLM api_key", "")
+        if not model:
+            model = _prompt_text("LLM model", "deepseek-chat")
+
+    return LLMSettings(
+        base_url=base_url or None,
+        api_key=api_key or None,
+        model=model or None,
+        timeout_seconds=current.timeout_seconds,
+    )
+
+
+def _run_llm_check(*, interactive: bool, prompt_message: str | None = None) -> tuple[bool, str]:
+    settings = _collect_llm_settings(interactive=interactive)
+    missing = []
+    if not settings.base_url:
+        missing.append("ANIMAL_GS_AGENT_LLM_BASE_URL")
+    if not settings.api_key:
+        missing.append("ANIMAL_GS_AGENT_LLM_API_KEY")
+    if not settings.model:
+        missing.append("ANIMAL_GS_AGENT_LLM_MODEL")
+    if missing:
+        return False, f"missing llm settings: {', '.join(missing)}"
+
+    probe = prompt_message or "ping"
+    if interactive and prompt_message is None:
+        probe = _prompt_text("LLM 检查消息", "ping")
+
+    client = OpenAICompatibleLLMClient(settings=settings)
+    system_prompt = "Return strict JSON object with keys ok(bool) and echo(string)."
+    user_prompt = f"health check message: {probe}"
+    try:
+        payload = client.request_json(system_prompt=system_prompt, user_prompt=user_prompt)
+        if not isinstance(payload, dict):
+            return False, "llm response is not a json object"
+        ok = bool(payload.get("ok", True))
+        echo = str(payload.get("echo", ""))
+        if not ok:
+            return False, f"llm provider returned ok=false echo={echo}"
+        return True, f"ok echo={echo}"
+    except Exception as exc:
+        return False, str(exc)
+
+
 def cmd_preflight(args: argparse.Namespace) -> int:
     workdir = _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
     print(f"[gsagent] workdir={workdir}")
@@ -86,6 +150,19 @@ def cmd_preflight(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
+    if args.llm_check != "skip":
+        run_check = args.llm_check == "always"
+        if args.llm_check == "auto":
+            answer = _prompt_text("启动前检查大模型 API 是否可用? (y/n)", "y").lower()
+            run_check = answer in {"", "y", "yes"}
+        if run_check:
+            ok, message = _run_llm_check(interactive=True, prompt_message=args.llm_probe)
+            if ok:
+                print(f"[gsagent] llm-check passed: {message}")
+            else:
+                print(f"[gsagent] llm-check failed: {message}")
+                return 2
+
     app_ref = "animal_gs_agent.api.app:create_app"
     print(f"[gsagent] starting API: {app_ref} host={args.host} port={args.port}")
     uvicorn.run(app_ref, factory=True, host=args.host, port=args.port, reload=args.reload)
@@ -128,6 +205,16 @@ def cmd_print_env(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_llm_check(args: argparse.Namespace) -> int:
+    _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
+    ok, message = _run_llm_check(interactive=True, prompt_message=args.message)
+    if ok:
+        print(f"[gsagent] llm-check passed: {message}")
+        return 0
+    print(f"[gsagent] llm-check failed: {message}")
+    return 2
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="gsagent",
@@ -147,6 +234,13 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="0.0.0.0")
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--reload", action="store_true", help="enable uvicorn reload")
+    serve.add_argument(
+        "--llm-check",
+        choices=["auto", "always", "skip"],
+        default="auto",
+        help="startup llm api check mode",
+    )
+    serve.add_argument("--llm-probe", default=None, help="probe message for llm check")
     serve.set_defaults(func=cmd_serve)
 
     worker = subparsers.add_parser("worker", help="start async queue worker")
@@ -160,6 +254,12 @@ def build_parser() -> argparse.ArgumentParser:
     print_env.add_argument("--workdir", default=".", help="working directory with .env and runtime files")
     print_env.add_argument("--env-file", default=".env", help="env file name in workdir")
     print_env.set_defaults(func=cmd_print_env)
+
+    llm_check = subparsers.add_parser("llm-check", help="interactive llm api availability check")
+    llm_check.add_argument("--workdir", default=".", help="working directory with .env and runtime files")
+    llm_check.add_argument("--env-file", default=".env", help="env file name in workdir")
+    llm_check.add_argument("--message", default=None, help="probe message for llm check")
+    llm_check.set_defaults(func=cmd_llm_check)
 
     return parser
 

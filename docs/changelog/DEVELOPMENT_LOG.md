@@ -852,3 +852,19 @@
   - `docs/delivery/AGENT_FULL_PICTURE.md` with CLI software mode
 - Added tests:
   - `tests/unit/test_cli.py`
+
+### Session 39
+
+- Extended CLI startup UX with PM-style interactive LLM readiness gate:
+  - added subcommand:
+    - `gsagent llm-check`
+  - `gsagent serve` now supports startup LLM check modes:
+    - `--llm-check auto|always|skip`
+    - default `auto` asks user whether to run check
+  - user-input flow during check:
+    - prompts missing `base_url/api_key/model`
+    - prompts probe message (default `ping`)
+  - failed check blocks service startup with explicit reason
+- Updated docs:
+  - `README.md`
+  - `packaging/runtime/README.md`
