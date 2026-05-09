@@ -827,3 +827,28 @@
     - `AC-P2-03-01=PASS`
     - `AC-P2-03-02=PASS`
     - `AC-P2-03-03=PASS`
+
+### Session 38
+
+- Added software-style CLI packaging for cross-directory invocation:
+  - new command entrypoint:
+    - `gsagent` -> `src/animal_gs_agent/cli.py`
+  - core subcommands:
+    - `preflight`
+    - `serve`
+    - `worker`
+    - `print-env`
+  - supports explicit runtime binding:
+    - `--workdir <target-dir>`
+    - optional `.env` loading per workdir
+- Added Python package script registration:
+  - `pyproject.toml` `[project.scripts]`
+- Added runtime bundle packaging helpers:
+  - `packaging/runtime/build_cli_runtime_bundle.sh`
+  - `packaging/runtime/install_runtime.sh`
+  - `packaging/runtime/README.md`
+- Updated docs:
+  - `README.md` with CLI installation and usage
+  - `docs/delivery/AGENT_FULL_PICTURE.md` with CLI software mode
+- Added tests:
+  - `tests/unit/test_cli.py`

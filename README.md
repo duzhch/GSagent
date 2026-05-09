@@ -81,6 +81,29 @@ Runbooks:
 - `docs/delivery/DEMO_10MIN_SCRIPT.md`
 - `docs/delivery/MVP_ACCEPTANCE_CHECKLIST.md`
 
+## CLI Software Packaging
+
+The project now exposes a global CLI command: `gsagent`.
+
+Install from source:
+
+```bash
+python -m pip install -e .
+```
+
+Then run from anywhere and bind to a target working directory:
+
+```bash
+gsagent preflight --workdir /path/to/project
+gsagent serve --workdir /path/to/project --host 0.0.0.0 --port 8000
+gsagent worker --workdir /path/to/project
+```
+
+See runtime bundle tooling:
+
+- `packaging/runtime/build_cli_runtime_bundle.sh`
+- `packaging/runtime/README.md`
+
 ## Offline Release Bundle
 
 To build a zero-download offline package (runtime + app + fixed pipeline + demo data):

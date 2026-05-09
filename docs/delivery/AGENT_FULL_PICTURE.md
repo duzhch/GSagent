@@ -241,6 +241,19 @@ QC governance notes:
 - Idempotent run guard avoids duplicate execution
 - Worker control-plane endpoints are available for operational probing and manual queue drain
 
+## 4.3 CLI Software Mode
+
+- Global CLI entrypoint:
+  - `gsagent` (installed via Python package script entrypoint)
+- Cross-directory runtime invocation with explicit workspace binding:
+  - `gsagent preflight --workdir <path>`
+  - `gsagent serve --workdir <path>`
+  - `gsagent worker --workdir <path>`
+- Runtime packaging helpers:
+  - `packaging/runtime/build_cli_runtime_bundle.sh`
+  - `packaging/runtime/install_runtime.sh`
+  - `packaging/runtime/README.md`
+
 ## 5. Current Limitations
 
 - Durable storage supports JSON and lightweight SQLite, but not yet PostgreSQL-grade multi-process locking strategy

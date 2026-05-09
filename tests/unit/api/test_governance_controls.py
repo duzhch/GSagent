@@ -2,34 +2,46 @@ from fastapi.testclient import TestClient
 
 from animal_gs_agent.api.app import create_app
 from animal_gs_agent.schemas.jobs import RankedCandidate, WorkflowSummary
+from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
+from animal_gs_agent.services.job_service import jobs_store
 from animal_gs_agent.services.workflow_service import WorkflowExecutionResult
 
 
-def _patch_llm(monkeypatch) -> None:
-    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_BASE_URL", "https://api.deepseek.com")
-    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_API_KEY", "secret-key")
-    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_MODEL", "deepseek-chat")
+def _patch_task_understanding(monkeypatch) -> None:
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_BASE_URL", "https://mock.local")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_API_KEY", "mock-key")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_MODEL", "mock-model")
+    for env_name in (
+        "ANIMAL_GS_AGENT_PLINK2_SMISS_PATH",
+        "ANIMAL_GS_AGENT_PLINK2_VMISS_PATH",
+        "ANIMAL_GS_AGENT_PLINK2_PCA_EIGENVEC_PATH",
+        "ANIMAL_GS_AGENT_PLINK2_RELATEDNESS_PATH",
+        "ANIMAL_GS_AGENT_PHENO_BATCH_COLUMN",
+    ):
+        monkeypatch.delenv(env_name, raising=False)
 
-    def fake_request_json(self, system_prompt: str, user_prompt: str) -> dict:
-        return {
-            "request_scope": "supported_gs",
-            "trait_name": "daily_gain",
-            "user_goal": "rank candidates for genomic selection",
-            "candidate_fixed_effects": ["sex", "batch"],
-            "population_description": "commercial pig population",
-            "missing_inputs": [],
-            "confidence": 0.91,
-            "clarification_needed": False,
-        }
+    def fake_understand_task(user_message: str, llm_client=None) -> TaskUnderstandingResult:
+        _ = user_message
+        _ = llm_client
+        return TaskUnderstandingResult(
+            request_scope="supported_gs",
+            trait_name="daily_gain",
+            user_goal="rank candidates for genomic selection",
+            candidate_fixed_effects=["sex", "batch"],
+            population_description="commercial pig population",
+            missing_inputs=[],
+            confidence=0.91,
+            clarification_needed=False,
+        )
 
-    monkeypatch.setattr(
-        "animal_gs_agent.llm.client.OpenAICompatibleLLMClient.request_json",
-        fake_request_json,
-    )
+    monkeypatch.setattr("animal_gs_agent.api.routes.jobs.understand_task", fake_understand_task)
 
 
 def test_submit_job_rejects_when_scope_not_authorized(monkeypatch, tmp_path) -> None:
-    _patch_llm(monkeypatch)
+    _patch_task_understanding(monkeypatch)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_PATH", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH", raising=False)
+    jobs_store.clear()
 
     phenotype_file = tmp_path / "pheno.csv"
     phenotype_file.write_text("animal_id,daily_gain\nA1,1.2\n", encoding="utf-8")
@@ -52,7 +64,10 @@ def test_submit_job_rejects_when_scope_not_authorized(monkeypatch, tmp_path) -> 
 
 
 def test_submit_job_rejects_when_project_quota_exceeded(monkeypatch, tmp_path) -> None:
-    _patch_llm(monkeypatch)
+    _patch_task_understanding(monkeypatch)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_PATH", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH", raising=False)
+    jobs_store.clear()
     monkeypatch.setenv("ANIMAL_GS_AGENT_PROJECT_QUOTA_MAX_ACTIVE", "1")
 
     phenotype_file = tmp_path / "pheno.csv"
@@ -89,7 +104,10 @@ def test_submit_job_rejects_when_project_quota_exceeded(monkeypatch, tmp_path) -
 
 
 def test_governance_audit_endpoint_returns_observability_snapshot(monkeypatch, tmp_path) -> None:
-    _patch_llm(monkeypatch)
+    _patch_task_understanding(monkeypatch)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_PATH", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_JOB_STORE_SQLITE_PATH", raising=False)
+    jobs_store.clear()
 
     phenotype_file = tmp_path / "pheno.csv"
     phenotype_file.write_text("animal_id,daily_gain\nA1,1.2\n", encoding="utf-8")
