@@ -916,3 +916,23 @@
 - Updated docs:
   - `README.md`
   - `packaging/runtime/README.md`
+
+### Session 42
+
+- Fixed full-test regression from path normalization:
+  - updated `tests/unit/api/test_job_submission.py` assertions to expect normalized absolute paths.
+- Added BED genotype runtime support in workflow execution:
+  - `src/animal_gs_agent/services/workflow_service.py`
+  - accepts `genotype_format=bed` and auto-converts `.bed/.bim/.fam` to VCF via `plink2` before Nextflow.
+  - keeps direct VCF path support unchanged.
+  - raises explicit errors for:
+    - missing BED sidecar files
+    - missing `plink2`
+    - conversion failure / missing VCF output
+- Added tests for BED workflow path:
+  - `tests/unit/services/test_workflow_service.py`
+    - conversion success path
+    - missing sidecar failure path
+- Updated operator docs:
+  - `README.md`
+  - `docs/delivery/REAL_DATA_RUNBOOK.md`

@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from pathlib import Path
 
 from animal_gs_agent.api.app import create_app
 from animal_gs_agent.schemas.dataset_profile import (
@@ -49,8 +50,8 @@ def test_submit_job_returns_pending_job(monkeypatch) -> None:
     assert body["trait_name"] == "daily_gain"
     assert body["task_understanding"]["request_scope"] == "supported_gs"
     assert body["task_understanding"]["candidate_fixed_effects"] == ["sex", "batch"]
-    assert body["dataset_profile"]["phenotype_path"] == "data/demo/phenotypes.csv"
-    assert body["dataset_profile"]["genotype_path"] == "data/demo/genotypes.pgen"
+    assert body["dataset_profile"]["phenotype_path"] == str((Path.cwd() / "data/demo/phenotypes.csv").resolve())
+    assert body["dataset_profile"]["genotype_path"] == str((Path.cwd() / "data/demo/genotypes.pgen").resolve())
     assert body["dataset_profile"]["path_checks"]["phenotype_exists"] is False
     assert body["dataset_profile"]["path_checks"]["genotype_exists"] is False
     assert "job_id" in body

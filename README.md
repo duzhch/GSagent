@@ -59,6 +59,9 @@ Current MVP includes:
 - job submission and status APIs (`/jobs`, `/jobs/{job_id}`)
 - dataset profiling with phenotype header checks and trait-column validation
 - runnable job endpoint (`/jobs/{job_id}/run`) that dispatches the fixed native Nextflow workflow, parses output artifacts, and persists structured workflow summaries
+- native workflow genotype input support:
+  - direct VCF input
+  - BED triplet (`.bed/.bim/.fam`) with automatic `plink2` conversion to VCF before workflow execution
 - report endpoint (`/jobs/{job_id}/report`) that returns agent-facing explanations with top GEBV candidates
 - artifacts endpoint (`/jobs/{job_id}/artifacts`) that returns reproducible output file manifests
 - structured execution diagnostics (`execution_error`, `execution_error_detail`) and timeline events (`events`)

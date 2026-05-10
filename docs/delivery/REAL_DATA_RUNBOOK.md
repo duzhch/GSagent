@@ -44,5 +44,8 @@ Submit and run through API (`/jobs`, `/jobs/{id}/run`), then inspect:
 ## 4) Notes
 
 - Current fixed workflow backend is the Nextflow gold-standard path.
-- If native workflow backend requires VCF input on your cluster, convert BED/PGEN to VCF first with PLINK2 and then submit using the VCF path.
+- Native workflow now accepts:
+  - VCF input directly
+  - BED triplet (`.bed/.bim/.fam`) via automatic PLINK2 conversion to VCF at runtime
+- PGEN is still not auto-converted in current version; convert PGEN to VCF manually before submission.
 - On login node, set `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY=auto` (or `slurm`) so the agent routes execution to Slurm instead of local compute.

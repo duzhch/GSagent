@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from animal_gs_agent.schemas.dataset_profile import DatasetPathChecks, DatasetProfile
 from animal_gs_agent.schemas.jobs import JobStatusResponse
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
@@ -9,7 +11,12 @@ from animal_gs_agent.services.workflow_service import (
 )
 
 
-def _build_job(phenotype_path: str, genotype_path: str, trait_name: str = "daily_gain") -> JobStatusResponse:
+def _build_job(
+    phenotype_path: str,
+    genotype_path: str,
+    trait_name: str = "daily_gain",
+    genotype_format: str = "vcf",
+) -> JobStatusResponse:
     return JobStatusResponse(
         job_id="job12345",
         status="queued",
@@ -29,7 +36,7 @@ def _build_job(phenotype_path: str, genotype_path: str, trait_name: str = "daily
             genotype_path=genotype_path,
             path_checks=DatasetPathChecks(phenotype_exists=True, genotype_exists=True),
             phenotype_format="csv",
-            genotype_format="vcf",
+            genotype_format=genotype_format,
             phenotype_headers=["animal_id", trait_name],
             trait_column_present=True,
             validation_flags=[],
@@ -164,3 +171,80 @@ def test_is_login_node_returns_false_inside_slurm_allocation(monkeypatch) -> Non
     monkeypatch.setattr("animal_gs_agent.services.workflow_service.shutil.which", lambda cmd: "/usr/bin/sbatch")
 
     assert _is_login_node() is False
+
+
+def test_execute_fixed_workflow_converts_bed_to_vcf_before_nextflow(tmp_path, monkeypatch) -> None:
+    pipeline_dir = tmp_path / "pipeline"
+    pipeline_dir.mkdir()
+    (pipeline_dir / "main.nf").write_text("workflow {}", encoding="utf-8")
+
+    bed_path = tmp_path / "geno.bed"
+    bed_path.write_text("bed", encoding="utf-8")
+    (tmp_path / "geno.bim").write_text("bim", encoding="utf-8")
+    (tmp_path / "geno.fam").write_text("fam", encoding="utf-8")
+
+    job = _build_job(
+        phenotype_path=str(tmp_path / "pheno.csv"),
+        genotype_path=str(bed_path),
+        genotype_format="bed",
+    )
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR", str(pipeline_dir))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT", str(tmp_path / "runs"))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY", "local")
+    monkeypatch.setattr("animal_gs_agent.services.workflow_service.shutil.which", lambda cmd: "/usr/bin/plink2")
+
+    calls: list[list[str]] = []
+
+    class _Completed:
+        def __init__(self, returncode: int = 0, stdout: str = "", stderr: str = "") -> None:
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = stderr
+
+    def _fake_run(command, *args, **kwargs):
+        calls.append(command)
+        if command[0] == "plink2":
+            out_prefix = command[-1]
+            (tmp_path / "runs" / "job12345" / "inputs").mkdir(parents=True, exist_ok=True)
+            Path(f"{out_prefix}.vcf").write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+            return _Completed()
+        return _Completed()
+
+    monkeypatch.setattr("animal_gs_agent.services.workflow_service.subprocess.run", _fake_run)
+
+    result = execute_fixed_workflow(job)
+
+    assert result.status == "completed"
+    assert result.backend == "native_nextflow"
+    assert calls[0][:4] == ["plink2", "--bfile", str(tmp_path / "geno"), "--recode"]
+    assert calls[1][0] == "nextflow"
+    assert "--genotype_vcf" in calls[1]
+    vcf_arg = calls[1][calls[1].index("--genotype_vcf") + 1]
+    assert vcf_arg.endswith("/runs/job12345/inputs/genotype_from_bed.vcf")
+
+
+def test_execute_fixed_workflow_raises_when_bed_sidecars_missing(tmp_path, monkeypatch) -> None:
+    pipeline_dir = tmp_path / "pipeline"
+    pipeline_dir.mkdir()
+    (pipeline_dir / "main.nf").write_text("workflow {}", encoding="utf-8")
+    bed_path = tmp_path / "geno.bed"
+    bed_path.write_text("bed", encoding="utf-8")
+
+    job = _build_job(
+        phenotype_path=str(tmp_path / "pheno.csv"),
+        genotype_path=str(bed_path),
+        genotype_format="bed",
+    )
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR", str(pipeline_dir))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT", str(tmp_path / "runs"))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY", "local")
+
+    try:
+        execute_fixed_workflow(job)
+    except WorkflowExecutionError as exc:
+        assert exc.code == "workflow_input_invalid"
+        assert "bed input is incomplete" in exc.message
+    else:
+        raise AssertionError("expected WorkflowExecutionError")
