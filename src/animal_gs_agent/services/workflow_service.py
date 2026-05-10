@@ -81,16 +81,7 @@ def _default_output_root() -> Path:
     return workdir / "runs"
 
 
-def _resolve_genotype_vcf(job: JobStatusResponse, out_dir: Path) -> str:
-    genotype_format = (job.dataset_profile.genotype_format or "").lower()
-    if genotype_format == "vcf":
-        return job.dataset_profile.genotype_path
-    if genotype_format != "bed":
-        raise WorkflowExecutionError(
-            code="workflow_input_invalid",
-            message="workflow only supports genotype format vcf or bed",
-        )
-
+def _resolve_bed_prefix(job: JobStatusResponse) -> Path:
     bed_path = Path(job.dataset_profile.genotype_path).expanduser().resolve()
     if bed_path.suffix.lower() != ".bed":
         raise WorkflowExecutionError(
@@ -106,6 +97,42 @@ def _resolve_genotype_vcf(job: JobStatusResponse, out_dir: Path) -> str:
             code="workflow_input_invalid",
             message=f"bed input is incomplete, missing: {', '.join(str(path) for path in missing)}",
         )
+    return prefix
+
+
+def _build_slurm_genotype_exports(job: JobStatusResponse, out_dir: Path) -> list[str]:
+    genotype_format = (job.dataset_profile.genotype_format or "").lower()
+    if genotype_format == "vcf":
+        return [
+            "ANIMAL_GS_AGENT_GENOTYPE_FORMAT=vcf",
+            f"ANIMAL_GS_AGENT_GENOTYPE_VCF={job.dataset_profile.genotype_path}",
+        ]
+    if genotype_format == "bed":
+        bed_prefix = _resolve_bed_prefix(job)
+        converted_prefix = out_dir / "inputs" / "genotype_from_bed"
+        converted_vcf = f"{converted_prefix}.vcf"
+        return [
+            "ANIMAL_GS_AGENT_GENOTYPE_FORMAT=bed",
+            f"ANIMAL_GS_AGENT_GENOTYPE_BFILE_PREFIX={bed_prefix}",
+            f"ANIMAL_GS_AGENT_GENOTYPE_VCF={converted_vcf}",
+        ]
+    raise WorkflowExecutionError(
+        code="workflow_input_invalid",
+        message="workflow only supports genotype format vcf or bed",
+    )
+
+
+def _resolve_genotype_vcf(job: JobStatusResponse, out_dir: Path) -> str:
+    genotype_format = (job.dataset_profile.genotype_format or "").lower()
+    if genotype_format == "vcf":
+        return job.dataset_profile.genotype_path
+    if genotype_format != "bed":
+        raise WorkflowExecutionError(
+            code="workflow_input_invalid",
+            message="workflow only supports genotype format vcf or bed",
+        )
+
+    prefix = _resolve_bed_prefix(job)
 
     if shutil.which("plink2") is None:
         raise WorkflowExecutionError(
@@ -167,7 +194,6 @@ def execute_fixed_workflow(job: JobStatusResponse) -> WorkflowExecutionResult:
         )
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    genotype_vcf_path = _resolve_genotype_vcf(job=job, out_dir=out_dir)
 
     execution_policy = os.getenv("ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY", "auto").strip().lower()
     if execution_policy not in {"auto", "local", "slurm"}:
@@ -187,12 +213,13 @@ def execute_fixed_workflow(job: JobStatusResponse) -> WorkflowExecutionResult:
                 message="slurm submit script is not configured",
             )
 
+        genotype_exports = _build_slurm_genotype_exports(job=job, out_dir=out_dir)
         submit_exports = ",".join(
             [
                 "ALL",
                 f"ANIMAL_GS_AGENT_JOB_ID={job.job_id}",
                 f"ANIMAL_GS_AGENT_TRAIT_NAME={job.trait_name}",
-                f"ANIMAL_GS_AGENT_GENOTYPE_VCF={genotype_vcf_path}",
+                *genotype_exports,
                 f"ANIMAL_GS_AGENT_PHENOTYPE_CSV={job.dataset_profile.phenotype_path}",
                 f"ANIMAL_GS_AGENT_OUTPUT_DIR={out_dir}",
                 f"ANIMAL_GS_AGENT_PIPELINE_DIR={pipeline_dir}",
@@ -220,6 +247,7 @@ def execute_fixed_workflow(job: JobStatusResponse) -> WorkflowExecutionResult:
             submission_id=submission_id or None,
         )
 
+    genotype_vcf_path = _resolve_genotype_vcf(job=job, out_dir=out_dir)
     command = build_native_nextflow_command(
         job=job,
         pipeline_dir=pipeline_dir,

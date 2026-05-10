@@ -936,3 +936,17 @@
 - Updated operator docs:
   - `README.md`
   - `docs/delivery/REAL_DATA_RUNBOOK.md`
+
+### Session 43
+
+- Fixed scheduling-order regression for BED input under Slurm policies:
+  - `src/animal_gs_agent/services/workflow_service.py`
+  - execution now decides `local` vs `slurm/auto->submit` before any BED->VCF conversion.
+  - `slurm/auto->submit` path no longer runs local `plink2` conversion.
+  - BED path on submit now exports metadata for compute-node conversion:
+    - `ANIMAL_GS_AGENT_GENOTYPE_FORMAT=bed`
+    - `ANIMAL_GS_AGENT_GENOTYPE_BFILE_PREFIX`
+    - `ANIMAL_GS_AGENT_GENOTYPE_VCF` (target path)
+- Added regression test to lock behavior:
+  - `tests/unit/services/test_workflow_service.py::test_execute_fixed_workflow_slurm_bed_path_does_not_run_local_plink2`
+- Updated runbook notes for Slurm BED conversion responsibility.

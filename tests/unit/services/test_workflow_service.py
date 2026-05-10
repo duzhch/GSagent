@@ -248,3 +248,54 @@ def test_execute_fixed_workflow_raises_when_bed_sidecars_missing(tmp_path, monke
         assert "bed input is incomplete" in exc.message
     else:
         raise AssertionError("expected WorkflowExecutionError")
+
+
+def test_execute_fixed_workflow_slurm_bed_path_does_not_run_local_plink2(tmp_path, monkeypatch) -> None:
+    pipeline_dir = tmp_path / "pipeline"
+    pipeline_dir.mkdir()
+    (pipeline_dir / "main.nf").write_text("workflow {}", encoding="utf-8")
+
+    submit_script = tmp_path / "submit.sh"
+    submit_script.write_text("#!/usr/bin/env bash\necho submit\n", encoding="utf-8")
+
+    bed_path = tmp_path / "geno.bed"
+    bed_path.write_text("bed", encoding="utf-8")
+    (tmp_path / "geno.bim").write_text("bim", encoding="utf-8")
+    (tmp_path / "geno.fam").write_text("fam", encoding="utf-8")
+
+    job = _build_job(
+        phenotype_path=str(tmp_path / "pheno.csv"),
+        genotype_path=str(bed_path),
+        genotype_format="bed",
+    )
+
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR", str(pipeline_dir))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT", str(tmp_path / "runs"))
+    monkeypatch.setenv("ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY", "slurm")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT", str(submit_script))
+
+    calls: list[list[str]] = []
+
+    class _Completed:
+        returncode = 0
+        stdout = "78901\n"
+        stderr = ""
+
+    def _fake_run(command, *args, **kwargs):
+        calls.append(command)
+        return _Completed()
+
+    monkeypatch.setattr("animal_gs_agent.services.workflow_service.subprocess.run", _fake_run)
+
+    result = execute_fixed_workflow(job)
+
+    assert result.backend == "slurm_nextflow_submit"
+    assert result.status == "submitted"
+    assert result.submission_id == "78901"
+    assert len(calls) == 1
+    assert calls[0][0] == "sbatch"
+    assert all(cmd[0] != "plink2" for cmd in calls)
+    export_arg = calls[0][3]
+    assert "ANIMAL_GS_AGENT_GENOTYPE_FORMAT=bed" in export_arg
+    assert f"ANIMAL_GS_AGENT_GENOTYPE_BFILE_PREFIX={tmp_path / 'geno'}" in export_arg
+    assert "ANIMAL_GS_AGENT_GENOTYPE_VCF=" in export_arg

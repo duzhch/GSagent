@@ -48,4 +48,11 @@ Submit and run through API (`/jobs`, `/jobs/{id}/run`), then inspect:
   - VCF input directly
   - BED triplet (`.bed/.bim/.fam`) via automatic PLINK2 conversion to VCF at runtime
 - PGEN is still not auto-converted in current version; convert PGEN to VCF manually before submission.
+- For `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY=slurm` (or `auto` routed to Slurm):
+  - the API host will not run local BED->VCF conversion.
+  - BED metadata is exported to submit script env:
+    - `ANIMAL_GS_AGENT_GENOTYPE_FORMAT=bed`
+    - `ANIMAL_GS_AGENT_GENOTYPE_BFILE_PREFIX=<prefix>`
+    - `ANIMAL_GS_AGENT_GENOTYPE_VCF=<target-vcf-path>`
+  - your Slurm submit script should perform conversion on compute nodes before workflow runtime.
 - On login node, set `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY=auto` (or `slurm`) so the agent routes execution to Slurm instead of local compute.
