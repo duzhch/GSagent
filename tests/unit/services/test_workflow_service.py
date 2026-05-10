@@ -3,6 +3,7 @@ from animal_gs_agent.schemas.jobs import JobStatusResponse
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
 from animal_gs_agent.services.workflow_service import (
     WorkflowExecutionError,
+    _is_login_node,
     build_native_nextflow_command,
     execute_fixed_workflow,
 )
@@ -145,3 +146,21 @@ def test_execute_fixed_workflow_raises_when_login_node_without_submit_script(tmp
         assert exc.code == "workflow_slurm_submit_script_missing"
     else:
         raise AssertionError("expected WorkflowExecutionError")
+
+
+def test_is_login_node_returns_true_when_sbatch_present_without_active_job(monkeypatch) -> None:
+    monkeypatch.delenv("ANIMAL_GS_AGENT_FORCE_LOGIN_NODE", raising=False)
+    monkeypatch.delenv("SLURM_JOB_ID", raising=False)
+    monkeypatch.setattr("animal_gs_agent.services.workflow_service.socket.gethostname", lambda: "r03c03n07")
+    monkeypatch.setattr("animal_gs_agent.services.workflow_service.shutil.which", lambda cmd: "/usr/bin/sbatch")
+
+    assert _is_login_node() is True
+
+
+def test_is_login_node_returns_false_inside_slurm_allocation(monkeypatch) -> None:
+    monkeypatch.delenv("ANIMAL_GS_AGENT_FORCE_LOGIN_NODE", raising=False)
+    monkeypatch.setenv("SLURM_JOB_ID", "12345")
+    monkeypatch.setattr("animal_gs_agent.services.workflow_service.socket.gethostname", lambda: "login01")
+    monkeypatch.setattr("animal_gs_agent.services.workflow_service.shutil.which", lambda cmd: "/usr/bin/sbatch")
+
+    assert _is_login_node() is False

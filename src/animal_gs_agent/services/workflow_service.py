@@ -1,6 +1,7 @@
 """Fixed GS workflow execution service."""
 
 import os
+import shutil
 import socket
 import subprocess
 from dataclasses import dataclass
@@ -54,23 +55,42 @@ def _is_login_node() -> bool:
     forced = os.getenv("ANIMAL_GS_AGENT_FORCE_LOGIN_NODE", "").strip().lower()
     if forced in {"1", "true", "yes"}:
         return True
+    if os.getenv("SLURM_JOB_ID"):
+        return False
 
     hostname = socket.gethostname().lower()
-    has_slurm_context = bool(os.getenv("SLURM_CLUSTER_NAME") or os.getenv("SLURM_CONF"))
-    return "login" in hostname and os.getenv("SLURM_JOB_ID") is None and has_slurm_context
+    if any(token in hostname for token in ("login", "head", "front", "submit", "mgmt")):
+        return True
+
+    prefer_slurm = os.getenv("ANIMAL_GS_AGENT_AUTO_PREFER_SLURM", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    return prefer_slurm and shutil.which("sbatch") is not None
+
+
+def _default_pipeline_dir() -> Path:
+    workdir = Path(os.getenv("ANIMAL_GS_AGENT_WORKDIR", os.getcwd())).expanduser().resolve()
+    return workdir / "pipeline"
+
+
+def _default_output_root() -> Path:
+    workdir = Path(os.getenv("ANIMAL_GS_AGENT_WORKDIR", os.getcwd())).expanduser().resolve()
+    return workdir / "runs"
 
 
 def execute_fixed_workflow(job: JobStatusResponse) -> WorkflowExecutionResult:
     pipeline_dir = Path(
         os.getenv(
             "ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR",
-            "/work/home/zyqlab/dzhichao/Agent0428/gs_prototype/pipeline",
+            str(_default_pipeline_dir()),
         )
     )
     output_root = Path(
         os.getenv(
             "ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT",
-            "/work/home/zyqlab/dzhichao/Agent0428/animal_gs_agent/runs",
+            str(_default_output_root()),
         )
     )
     out_dir = output_root / job.job_id

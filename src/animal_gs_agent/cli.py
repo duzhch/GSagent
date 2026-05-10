@@ -51,9 +51,15 @@ def _prepare_runtime(*, workdir: str, env_file: str) -> Path:
 
 def _required_command_missing() -> list[str]:
     missing: list[str] = []
-    for cmd in ("python", "nextflow", "plink2", "Rscript"):
-        if shutil.which(cmd) is None:
-            missing.append(cmd)
+    required_groups: list[tuple[str, ...]] = [
+        ("python3", "python"),
+        ("nextflow",),
+        ("plink2",),
+        ("Rscript",),
+    ]
+    for choices in required_groups:
+        if not any(shutil.which(cmd) for cmd in choices):
+            missing.append("/".join(choices))
     return missing
 
 

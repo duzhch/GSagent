@@ -18,7 +18,14 @@ if [[ -x "\${ROOT_DIR}/.venv/bin/python" ]]; then
 fi
 
 export PYTHONPATH="\${ROOT_DIR}/src:\${PYTHONPATH:-}"
-exec python -m animal_gs_agent.cli "\$@"
+if command -v python3 >/dev/null 2>&1; then
+  exec python3 -m animal_gs_agent.cli "\$@"
+elif command -v python >/dev/null 2>&1; then
+  exec python -m animal_gs_agent.cli "\$@"
+fi
+
+echo "[gsagent] python runtime not found (expected python3 or python)." >&2
+exit 127
 EOF
 
 chmod +x "${TARGET_BIN}"

@@ -878,3 +878,41 @@
 - Updated docs with global installation path:
   - `README.md`
   - `packaging/runtime/README.md`
+
+### Session 41
+
+- Security hardening and cluster-safety fixes based on external audit:
+  - Added API token auth dependency for protected routes:
+    - new file: `src/animal_gs_agent/api/auth.py`
+    - protected routes:
+      - `/agent/*`
+      - `/jobs/*`
+      - `/worker/*`
+    - `/health` remains open
+  - Added job input path normalization + whitelist gate:
+    - `src/animal_gs_agent/api/routes/jobs.py`
+    - blocks requests outside `ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS`
+    - defaults allowed root to `ANIMAL_GS_AGENT_WORKDIR`
+- Improved Slurm/login node auto detection:
+  - `src/animal_gs_agent/services/workflow_service.py`
+  - `auto` now prefers Slurm when:
+    - login/head/front/submit/mgmt-like hostnames, or
+    - `sbatch` exists and no `SLURM_JOB_ID` allocation
+- Removed author-local hardcoded runtime paths:
+  - workflow pipeline/output defaults now workdir-scoped:
+    - `<workdir>/pipeline`
+    - `<workdir>/runs`
+  - trace output fallback in `job_service` now also workdir-scoped
+- Fixed global installer Python fallback and preflight command checks:
+  - `scripts/install_global_gsagent.sh` now prefers `python3`, then `python`
+  - `src/animal_gs_agent/cli.py` preflight now accepts `python3/python`
+- Added/updated tests:
+  - `tests/unit/api/test_api_auth.py`
+  - `tests/unit/api/test_job_path_security.py`
+  - `tests/unit/services/test_workflow_service.py`
+  - `tests/unit/test_cli.py`
+  - `tests/unit/scripts/test_install_global_script.py`
+  - `tests/conftest.py`
+- Updated docs:
+  - `README.md`
+  - `packaging/runtime/README.md`

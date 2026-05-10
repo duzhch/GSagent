@@ -99,12 +99,13 @@ def _job_store_sqlite_path() -> Path | None:
 def _trace_output_dir(job: JobStatusResponse) -> Path:
     if job.workflow_result_dir and job.workflow_result_dir.strip():
         return Path(job.workflow_result_dir)
+    default_root = Path(os.getenv("ANIMAL_GS_AGENT_WORKDIR", os.getcwd())).expanduser().resolve() / "runs"
     root = Path(
         os.getenv(
             "ANIMAL_GS_AGENT_TRACE_OUTPUT_ROOT",
             os.getenv(
                 "ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT",
-                "/work/home/zyqlab/dzhichao/Agent0428/animal_gs_agent/runs",
+                str(default_root),
             ),
         )
     )

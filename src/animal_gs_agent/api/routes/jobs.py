@@ -1,6 +1,7 @@
 """Job submission routes."""
 
 import os
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -42,6 +43,50 @@ from animal_gs_agent.services.workflow_result_service import parse_workflow_outp
 from animal_gs_agent.services.workflow_service import execute_fixed_workflow
 
 
+def _runtime_workdir() -> Path:
+    return Path(os.getenv("ANIMAL_GS_AGENT_WORKDIR", os.getcwd())).expanduser().resolve()
+
+
+def _allowed_data_roots() -> list[Path]:
+    configured = os.getenv("ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS", "").strip()
+    if not configured:
+        return [_runtime_workdir()]
+
+    roots: list[Path] = []
+    for item in configured.split(","):
+        token = item.strip()
+        if token:
+            roots.append(Path(token).expanduser().resolve())
+    return roots or [_runtime_workdir()]
+
+
+def _resolve_user_path(raw_path: str) -> Path:
+    candidate = Path(raw_path).expanduser()
+    if not candidate.is_absolute():
+        candidate = _runtime_workdir() / candidate
+    return candidate.resolve()
+
+
+def _within_root(path: Path, root: Path) -> bool:
+    return path == root or root in path.parents
+
+
+def _normalize_and_validate_paths(payload: JobSubmissionRequest) -> JobSubmissionRequest:
+    phenotype = _resolve_user_path(payload.phenotype_path)
+    genotype = _resolve_user_path(payload.genotype_path)
+    allowed_roots = _allowed_data_roots()
+    if not any(_within_root(phenotype, root) for root in allowed_roots):
+        raise HTTPException(status_code=403, detail="data_path_outside_allowed_roots")
+    if not any(_within_root(genotype, root) for root in allowed_roots):
+        raise HTTPException(status_code=403, detail="data_path_outside_allowed_roots")
+    return payload.model_copy(
+        update={
+            "phenotype_path": str(phenotype),
+            "genotype_path": str(genotype),
+        }
+    )
+
+
 def create_jobs_router() -> APIRouter:
     router = APIRouter()
 
@@ -52,6 +97,7 @@ def create_jobs_router() -> APIRouter:
         status_code=status.HTTP_202_ACCEPTED,
     )
     def submit_job(payload: JobSubmissionRequest) -> JobSubmissionResponse:
+        payload = _normalize_and_validate_paths(payload)
         settings = get_settings()
         if not settings.llm.base_url or not settings.llm.api_key or not settings.llm.model:
             raise HTTPException(status_code=503, detail="LLM provider is not configured")

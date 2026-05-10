@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from animal_gs_agent.cli import _prepare_runtime, _resolve_workdir, build_parser
+from animal_gs_agent.cli import _prepare_runtime, _required_command_missing, _resolve_workdir, build_parser
 
 
 def test_resolve_workdir_rejects_missing_path(tmp_path: Path) -> None:
@@ -44,3 +44,14 @@ def test_parser_contains_expected_subcommands() -> None:
     action = next(item for item in parser._actions if item.dest == "command")
     subcommands = set(action.choices.keys())
     assert {"preflight", "serve", "worker", "print-env", "llm-check"}.issubset(subcommands)
+
+
+def test_required_command_missing_accepts_python3_fallback(monkeypatch) -> None:
+    available = {"python3", "nextflow", "plink2", "Rscript"}
+
+    monkeypatch.setattr(
+        "animal_gs_agent.cli.shutil.which",
+        lambda cmd: f"/usr/bin/{cmd}" if cmd in available else None,
+    )
+
+    assert _required_command_missing() == []

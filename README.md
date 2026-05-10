@@ -106,12 +106,39 @@ gsagent serve --workdir /path/to/project --host 0.0.0.0 --port 8000
 gsagent worker --workdir /path/to/project
 ```
 
+Minimum runtime security env (recommended in target workdir `.env`):
+
+```bash
+ANIMAL_GS_AGENT_API_TOKEN=replace-with-long-random-token
+# Optional for test/local only:
+# ANIMAL_GS_AGENT_API_AUTH_DISABLED=1
+#
+# Optional path whitelist for job inputs:
+# ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS=/data/projectA,/data/shared
+```
+
+Security behavior:
+
+- all control-plane/business endpoints now require token auth by default:
+  - `X-API-Key: <token>` or `Authorization: Bearer <token>`
+- `/health` remains public for probes
+- job input paths are normalized and constrained to `ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS`
+  - if unset, default root is `ANIMAL_GS_AGENT_WORKDIR`
+
 `gsagent serve` defaults to interactive startup check for LLM API availability.
 You can control behavior with:
 
 - `--llm-check auto` (default, asks user)
 - `--llm-check always` (always run check)
 - `--llm-check skip` (skip check)
+
+Workflow scheduling behavior (cluster-safe defaults):
+
+- `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY=auto` prefers Slurm submit when:
+  - running on hostnames like `login/head/front/submit/mgmt`, or
+  - `sbatch` is available and not inside a `SLURM_JOB_ID` allocation
+- `ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR` and `ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT`
+  default to `<workdir>/pipeline` and `<workdir>/runs` for portability
 
 If `gsagent` is not found after install, add:
 

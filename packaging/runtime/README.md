@@ -51,3 +51,23 @@ gsagent worker --workdir /path/to/project
 `--workdir` lets you invoke the software globally while binding runtime context to a target folder (env file, output paths, local configs).
 
 At API startup, `gsagent serve` can run an interactive LLM availability check and ask user input for probe message and missing config values.
+
+## Security Defaults
+
+Set these in the target workdir `.env`:
+
+```bash
+ANIMAL_GS_AGENT_API_TOKEN=replace-with-long-random-token
+ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS=/data/projectA,/data/shared
+```
+
+- Protected endpoints require `X-API-Key` or `Authorization: Bearer`.
+- `/health` stays open for liveness checks.
+- Job input paths are constrained to allowed roots; when unset it falls back to `ANIMAL_GS_AGENT_WORKDIR`.
+
+## Cluster Execution Defaults
+
+- `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY=auto` prefers Slurm submission on head/login-like nodes and on nodes where `sbatch` exists outside active Slurm allocations.
+- Default pipeline/output roots are workdir-scoped:
+  - `<workdir>/pipeline`
+  - `<workdir>/runs`
