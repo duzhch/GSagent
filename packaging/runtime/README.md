@@ -21,6 +21,14 @@ Output (default):
 
 - `dist/gsagent-cli-runtime-<timestamp>/`
 
+## Global Command Install (Current Repo)
+
+```bash
+bash scripts/install_global_gsagent.sh
+```
+
+This writes `gsagent` to `~/.local/bin/gsagent`.
+
 ## Install Bundle on Another Host
 
 ```bash

@@ -868,3 +868,13 @@
 - Updated docs:
   - `README.md`
   - `packaging/runtime/README.md`
+
+### Session 40
+
+- Added global command installer for newcomer-friendly setup:
+  - `scripts/install_global_gsagent.sh`
+  - installs `gsagent` into `~/.local/bin/gsagent`
+  - includes PATH warning guidance if `~/.local/bin` is not exported
+- Updated docs with global installation path:
+  - `README.md`
+  - `packaging/runtime/README.md`

@@ -85,7 +85,13 @@ Runbooks:
 
 The project now exposes a global CLI command: `gsagent`.
 
-Install from source:
+Install global command (recommended):
+
+```bash
+bash scripts/install_global_gsagent.sh
+```
+
+If you prefer editable Python package install:
 
 ```bash
 python -m pip install -e .
@@ -106,6 +112,12 @@ You can control behavior with:
 - `--llm-check auto` (default, asks user)
 - `--llm-check always` (always run check)
 - `--llm-check skip` (skip check)
+
+If `gsagent` is not found after install, add:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
 
 See runtime bundle tooling:
 
