@@ -1,4 +1,4 @@
-name: gsagent_native
+name: gsagent_runtime
 channels:
   - conda-forge
   - bioconda
@@ -10,7 +10,6 @@ dependencies:
   - pydantic>=2.9,<3.0
   - httpx>=0.27,<1.0
   - langgraph>=0.2,<0.3
-  - pytest>=8.3,<9.0
   - nextflow
   - plink2
   - openjdk=17

@@ -15,14 +15,23 @@ if [[ ! -f "${BUNDLE_DIR}/environment.yml" ]]; then
 fi
 
 echo "[install] create env: ${ENV_NAME}"
-conda env create -n "${ENV_NAME}" -f "${BUNDLE_DIR}/environment.yml" >/dev/null 2>&1 || \
-conda env update -n "${ENV_NAME}" -f "${BUNDLE_DIR}/environment.yml" >/dev/null 2>&1
+conda env create -n "${ENV_NAME}" -f "${BUNDLE_DIR}/environment.yml" || \
+conda env update -n "${ENV_NAME}" -f "${BUNDLE_DIR}/environment.yml"
 
 echo "[install] install wheel into env: ${ENV_NAME}"
 conda run -n "${ENV_NAME}" python -m pip install \
   --no-index \
   --find-links "${BUNDLE_DIR}/wheels" \
   animal-gs-agent
+
+echo "[install] verify core runtime tools"
+conda run -n "${ENV_NAME}" bash -lc '
+set -euo pipefail
+python -V
+nextflow -version >/dev/null
+plink2 --version | head -n 1
+Rscript -e "suppressMessages(library(jsonlite)); cat(\"R_OK\\n\")"
+'
 
 echo "[install] done"
 echo "Activate with: conda activate ${ENV_NAME}"

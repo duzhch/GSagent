@@ -950,3 +950,24 @@
 - Added regression test to lock behavior:
   - `tests/unit/services/test_workflow_service.py::test_execute_fixed_workflow_slurm_bed_path_does_not_run_local_plink2`
 - Updated runbook notes for Slurm BED conversion responsibility.
+
+### Session 44
+
+- Closed real-run packaging gap: runtime bundles now include full GS toolchain dependencies:
+  - added `packaging/runtime/environment.yml` with:
+    - `nextflow`, `plink2`, `openjdk`, `r-base`, `r-jsonlite`, `r-data.table`, `r-bglr`
+  - updated `packaging/runtime/build_cli_runtime_bundle.sh` to copy runtime-specific env template
+  - updated `packaging/runtime/install_runtime.sh` to verify installed tools after env creation
+- Updated native env template to match real-run requirements:
+  - `packaging/native/environment.yml` now includes required GS runtime tools and bioconda channel.
+- Added prompt contract for model-driven tool planning:
+  - new file `src/animal_gs_agent/agent/prompts.py`
+  - task understanding now uses `TASK_UNDERSTANDING_SYSTEM_PROMPT` with explicit JSON schema and runtime tool policy fields.
+  - wired into `src/animal_gs_agent/agent/task_understanding.py`.
+- Added tests:
+  - `tests/unit/scripts/test_runtime_environment_bundle.py`
+  - `tests/unit/agent/test_prompt_contract.py`
+- Updated docs:
+  - `README.md`
+  - `packaging/runtime/README.md`
+  - `packaging/native/README.md`

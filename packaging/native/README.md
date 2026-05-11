@@ -16,6 +16,12 @@ This directory is the non-container delivery bundle for clusters without Docker 
 5. Start API:
    - `bash scripts/native/start_api.sh`
 
+The native environment file includes runtime tools required for real pipeline execution:
+
+- `nextflow`
+- `plink2`
+- `Rscript` (`r-base` + `r-jsonlite` + `r-data.table` + `r-bglr`)
+
 ## Login Node Rule (Slurm-Aware)
 
 Execution policy is controlled by `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY`:

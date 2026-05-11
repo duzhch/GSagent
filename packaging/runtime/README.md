@@ -37,6 +37,12 @@ bash install_runtime.sh
 conda activate gsagent_runtime
 ```
 
+`install_runtime.sh` now verifies that these tools are available in the created env:
+
+- `nextflow`
+- `plink2`
+- `Rscript` (with `jsonlite`)
+
 ## Typical Usage
 
 From any directory:

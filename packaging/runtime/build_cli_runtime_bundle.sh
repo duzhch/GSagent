@@ -16,7 +16,7 @@ echo "[bundle] build wheel (no deps)"
 python -m pip wheel --no-deps . -w "${OUT_DIR}/wheels"
 
 echo "[bundle] copy runtime environment template"
-cp "${ROOT_DIR}/packaging/native/environment.yml" "${OUT_DIR}/environment.yml"
+cp "${ROOT_DIR}/packaging/runtime/environment.yml" "${OUT_DIR}/environment.yml"
 cp "${ROOT_DIR}/packaging/runtime/install_runtime.sh" "${OUT_DIR}/install_runtime.sh"
 chmod +x "${OUT_DIR}/install_runtime.sh"
 

@@ -94,10 +94,20 @@ Install global command (recommended):
 bash scripts/install_global_gsagent.sh
 ```
 
+Note: this installs the `gsagent` CLI wrapper only. It does not install heavy runtime tools
+(`plink2`, `nextflow`, `Rscript`) automatically.
+
 If you prefer editable Python package install:
 
 ```bash
 python -m pip install -e .
+```
+
+To install full runtime dependencies (recommended for real GS runs):
+
+```bash
+conda env create -f packaging/native/environment.yml
+conda activate gsagent_native
 ```
 
 Then run from anywhere and bind to a target working directory:

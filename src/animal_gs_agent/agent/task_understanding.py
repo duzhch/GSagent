@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from animal_gs_agent.agent.prompts import TASK_UNDERSTANDING_SYSTEM_PROMPT
 from animal_gs_agent.schemas.task_understanding import TaskUnderstandingResult
 
 
@@ -54,7 +55,7 @@ def _normalize_payload(payload: dict) -> dict:
 
 
 def understand_task(user_message: str, llm_client) -> TaskUnderstandingResult:
-    system_prompt = "You are a genomic selection request parser. Return strict JSON only."
+    system_prompt = TASK_UNDERSTANDING_SYSTEM_PROMPT
     try:
         payload = llm_client.request_json(system_prompt=system_prompt, user_prompt=user_message)
     except Exception as exc:
