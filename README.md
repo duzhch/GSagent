@@ -88,6 +88,19 @@ Runbooks:
 
 The project now exposes a global CLI command: `gsagent`.
 
+One-command easy install (recommended for large-team onboarding):
+
+```bash
+bash scripts/install_easy_gsagent.sh
+```
+
+This script will:
+
+1. install Miniforge automatically when `conda` is missing
+2. create/update runtime env with `plink2/nextflow/Rscript`
+3. install the project into the runtime env
+4. install global `gsagent` launcher to `~/.local/bin`
+
 Install global command (recommended):
 
 ```bash

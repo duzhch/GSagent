@@ -4,6 +4,12 @@ This directory is the non-container delivery bundle for clusters without Docker 
 
 ## Quick Start
 
+Recommended one-command setup from repository root:
+
+- `bash scripts/install_easy_gsagent.sh`
+
+Manual setup:
+
 1. Create environment:
    - `conda env create -f packaging/native/environment.yml`
 2. Activate:

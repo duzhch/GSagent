@@ -23,6 +23,16 @@ Output (default):
 
 ## Global Command Install (Current Repo)
 
+Foolproof installer (recommended):
+
+```bash
+bash scripts/install_easy_gsagent.sh
+```
+
+This mode installs both runtime dependencies and the global launcher.
+
+Minimal launcher-only mode:
+
 ```bash
 bash scripts/install_global_gsagent.sh
 ```
