@@ -2,6 +2,8 @@
 
 MVP repository for an animal breeding genomic selection agent.
 
+Chinese documentation: `README_CN.md`
+
 ## Goal
 
 Build a LangGraph-based agent that can:
