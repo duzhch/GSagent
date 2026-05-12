@@ -88,27 +88,129 @@ Runbooks:
 
 The project now exposes a global CLI command: `gsagent`.
 
-One-command easy install (recommended for large-team onboarding):
+### Quick Start (Recommended)
+
+Use this path for new users and test teams. It installs runtime tools and global CLI together.
 
 ```bash
 bash scripts/install_easy_gsagent.sh
 ```
 
-This script will:
+What this installer does:
 
 1. install Miniforge automatically when `conda` is missing
 2. create/update runtime env with `plink2/nextflow/Rscript`
 3. install the project into the runtime env
 4. install global `gsagent` launcher to `~/.local/bin`
 
-Install global command (recommended):
+If `gsagent` is not found after install:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+### Configure API and Runtime (Interactive)
+
+Run interactive setup in your target workdir:
+
+```bash
+gsagent configure --workdir /path/to/project
+```
+
+Alias:
+
+```bash
+gsagent init --workdir /path/to/project
+```
+
+`gsagent configure` writes/updates `/path/to/project/.env` and prompts for:
+
+- LLM base URL
+- LLM API key (hidden input)
+- LLM model
+- API auth token for protected endpoints
+- workflow policy and path settings
+- allowed data roots whitelist
+
+Important behavior:
+
+- if `.env` already exists, keys are updated in place
+- leave API key input empty to keep existing key
+
+### Verify Setup
+
+```bash
+gsagent preflight --workdir /path/to/project
+gsagent llm-check --workdir /path/to/project --message "health check"
+```
+
+Expected:
+
+- `preflight OK`
+- `llm-check passed`
+
+### Start Service
+
+```bash
+gsagent serve --workdir /path/to/project --host 0.0.0.0 --port 8000 --llm-check auto
+```
+
+### API Smoke Test (Copy/Paste)
+
+Open another terminal:
+
+```bash
+cd /path/to/project
+export GS_TOKEN=$(awk -F= '/^ANIMAL_GS_AGENT_API_TOKEN=/{print $2}' .env)
+
+# Public health endpoint (should be 200)
+curl -s http://127.0.0.1:8000/health
+
+# Protected endpoint without token (should be 401)
+curl -s http://127.0.0.1:8000/worker/health
+
+# Protected endpoint with token (should be 200)
+curl -s -H "X-API-Key: ${GS_TOKEN}" http://127.0.0.1:8000/worker/health
+```
+
+### Real Job Smoke Test (BED Input)
+
+```bash
+curl -s -X POST "http://127.0.0.1:8000/jobs" \
+  -H "X-API-Key: ${GS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_message": "Run BF genomic selection with fixed effects sex and batch",
+    "trait_name": "BF",
+    "phenotype_path": "/path/to/data/BF_phenotype.csv",
+    "genotype_path": "/path/to/data/2548bir.bed"
+  }'
+```
+
+### Cluster Safety Defaults
+
+- `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY=auto` prefers Slurm submit when:
+  - running on hostnames like `login/head/front/submit/mgmt`, or
+  - `sbatch` is available and not inside a `SLURM_JOB_ID` allocation
+- `ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR` and `ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT`
+  default to `<workdir>/pipeline` and `<workdir>/runs`
+
+### Security Defaults
+
+- all control-plane/business endpoints require token auth by default:
+  - `X-API-Key: <token>` or `Authorization: Bearer <token>`
+- `/health` remains public for probes
+- job input paths are normalized and constrained to `ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS`
+  - if unset, default root is `ANIMAL_GS_AGENT_WORKDIR`
+
+### Alternative Install Paths (Advanced)
+
+`install_global_gsagent.sh` only installs CLI wrapper and does not install heavy runtime tools
+(`plink2`, `nextflow`, `Rscript`):
 
 ```bash
 bash scripts/install_global_gsagent.sh
 ```
-
-Note: this installs the `gsagent` CLI wrapper only. It does not install heavy runtime tools
-(`plink2`, `nextflow`, `Rscript`) automatically.
 
 If you prefer editable Python package install:
 
@@ -121,62 +223,6 @@ To install full runtime dependencies (recommended for real GS runs):
 ```bash
 conda env create -f packaging/native/environment.yml
 conda activate gsagent_native
-```
-
-Then run from anywhere and bind to a target working directory:
-
-```bash
-gsagent configure --workdir /path/to/project
-gsagent preflight --workdir /path/to/project
-gsagent llm-check --workdir /path/to/project
-gsagent serve --workdir /path/to/project --host 0.0.0.0 --port 8000
-gsagent worker --workdir /path/to/project
-```
-
-`gsagent configure` (alias: `gsagent init`) provides an interactive terminal setup flow:
-
-- prompts user to input LLM API key (hidden input)
-- writes/updates `.env` in the target workdir
-- configures API auth token and runtime paths in one place
-
-Minimum runtime security env (recommended in target workdir `.env`):
-
-```bash
-ANIMAL_GS_AGENT_API_TOKEN=replace-with-long-random-token
-# Optional for test/local only:
-# ANIMAL_GS_AGENT_API_AUTH_DISABLED=1
-#
-# Optional path whitelist for job inputs:
-# ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS=/data/projectA,/data/shared
-```
-
-Security behavior:
-
-- all control-plane/business endpoints now require token auth by default:
-  - `X-API-Key: <token>` or `Authorization: Bearer <token>`
-- `/health` remains public for probes
-- job input paths are normalized and constrained to `ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS`
-  - if unset, default root is `ANIMAL_GS_AGENT_WORKDIR`
-
-`gsagent serve` defaults to interactive startup check for LLM API availability.
-You can control behavior with:
-
-- `--llm-check auto` (default, asks user)
-- `--llm-check always` (always run check)
-- `--llm-check skip` (skip check)
-
-Workflow scheduling behavior (cluster-safe defaults):
-
-- `ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY=auto` prefers Slurm submit when:
-  - running on hostnames like `login/head/front/submit/mgmt`, or
-  - `sbatch` is available and not inside a `SLURM_JOB_ID` allocation
-- `ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR` and `ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT`
-  default to `<workdir>/pipeline` and `<workdir>/runs` for portability
-
-If `gsagent` is not found after install, add:
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
 ```
 
 See runtime bundle tooling:
