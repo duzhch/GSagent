@@ -1,0 +1,46 @@
+Bootstrap: docker
+From: condaforge/mambaforge:latest
+
+%labels
+    Maintainer GSAgent
+    Description "Animal GS Agent full runtime image (no API key embedded)"
+
+%files
+    . /opt/animal_gs_agent
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export ANIMAL_GS_AGENT_WORKDIR=/workspace
+    export PATH=/opt/conda/bin:/usr/local/bin:$PATH
+
+%post
+    set -euo pipefail
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Keep host secrets out of image.
+    rm -f /opt/animal_gs_agent/.env || true
+
+    cd /opt/animal_gs_agent
+    /opt/conda/bin/conda env create -n gsagent_runtime -f packaging/runtime/environment.yml || \
+    /opt/conda/bin/conda env update -n gsagent_runtime -f packaging/runtime/environment.yml
+
+    /opt/conda/bin/conda run -n gsagent_runtime python -m pip install --no-cache-dir -e /opt/animal_gs_agent
+
+    cat > /usr/local/bin/gsagent <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+exec /opt/conda/bin/conda run -n gsagent_runtime python -m animal_gs_agent.cli "$@"
+EOF
+    chmod +x /usr/local/bin/gsagent
+
+    /opt/conda/bin/conda run -n gsagent_runtime nextflow -version >/dev/null
+    /opt/conda/bin/conda run -n gsagent_runtime plink2 --version | head -n 1
+    /opt/conda/bin/conda run -n gsagent_runtime Rscript -e "suppressMessages(library(jsonlite)); cat('R_OK\n')"
+
+%runscript
+    exec /usr/local/bin/gsagent "$@"
+
+%test
+    /usr/local/bin/gsagent --version
+    /usr/local/bin/gsagent preflight --workdir /opt/animal_gs_agent || true

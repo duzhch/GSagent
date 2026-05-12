@@ -988,3 +988,21 @@
   - `README.md`
   - `packaging/runtime/README.md`
   - `packaging/native/README.md`
+
+### Session 46
+
+- Added full Singularity/Apptainer packaging path (excluding API secrets):
+  - `packaging/singularity/Apptainer.def`
+  - `packaging/singularity/build_sif.sh`
+  - `packaging/singularity/run_examples.sh`
+  - `packaging/singularity/README.md`
+- Container image includes:
+  - app runtime
+  - `nextflow`
+  - `plink2`
+  - `Rscript` and required R packages
+  - global `gsagent` command entry
+- API keys are intentionally not baked into image; runtime uses mounted `.env`.
+- Added tests:
+  - `tests/unit/scripts/test_singularity_packaging.py`
+- Updated top-level README with `.sif` build/run entry.

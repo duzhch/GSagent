@@ -186,3 +186,21 @@ bash packaging/release/build_offline_bundle.sh
 ```
 
 Output archive is written to `dist/animal-gs-agent-offline-<date>-<gitsha>.tar.gz`.
+
+## Singularity/Apptainer Full Image
+
+Build a full `.sif` image (runtime + tools + app, no API key embedded):
+
+```bash
+bash packaging/singularity/build_sif.sh
+```
+
+Run examples:
+
+```bash
+bash packaging/singularity/run_examples.sh dist/<your-image>.sif /path/to/workdir
+```
+
+Details:
+
+- `packaging/singularity/README.md`
