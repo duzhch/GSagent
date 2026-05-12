@@ -126,11 +126,18 @@ conda activate gsagent_native
 Then run from anywhere and bind to a target working directory:
 
 ```bash
+gsagent configure --workdir /path/to/project
 gsagent preflight --workdir /path/to/project
 gsagent llm-check --workdir /path/to/project
 gsagent serve --workdir /path/to/project --host 0.0.0.0 --port 8000
 gsagent worker --workdir /path/to/project
 ```
+
+`gsagent configure` (alias: `gsagent init`) provides an interactive terminal setup flow:
+
+- prompts user to input LLM API key (hidden input)
+- writes/updates `.env` in the target workdir
+- configures API auth token and runtime paths in one place
 
 Minimum runtime security env (recommended in target workdir `.env`):
 

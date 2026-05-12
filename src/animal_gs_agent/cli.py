@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+from getpass import getpass
 import os
 from pathlib import Path
+import secrets
 import shutil
 import sys
 import time
@@ -81,6 +83,50 @@ def _prompt_text(label: str, default: str | None = None) -> str:
     if raw:
         return raw
     return default or ""
+
+
+def _prompt_secret(label: str) -> str:
+    return getpass(f"{label}: ").strip()
+
+
+def _read_env_kv(env_path: Path) -> dict[str, str]:
+    if not env_path.exists():
+        return {}
+    values: dict[str, str] = {}
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        values[key.strip()] = value.strip().strip("'").strip('"')
+    return values
+
+
+def _upsert_env_file(env_path: Path, updates: dict[str, str]) -> None:
+    existing_lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
+    replaced: set[str] = set()
+    output_lines: list[str] = []
+
+    for line in existing_lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            output_lines.append(line)
+            continue
+        key, _ = stripped.split("=", 1)
+        key = key.strip()
+        if key in updates:
+            output_lines.append(f"{key}={updates[key]}")
+            replaced.add(key)
+        else:
+            output_lines.append(line)
+
+    missing = [key for key in updates if key not in replaced]
+    if missing and output_lines and output_lines[-1].strip():
+        output_lines.append("")
+    for key in missing:
+        output_lines.append(f"{key}={updates[key]}")
+
+    env_path.write_text("\n".join(output_lines).rstrip() + "\n", encoding="utf-8")
 
 
 def _collect_llm_settings(interactive: bool) -> LLMSettings:
@@ -221,6 +267,59 @@ def cmd_llm_check(args: argparse.Namespace) -> int:
     return 2
 
 
+def cmd_configure(args: argparse.Namespace) -> int:
+    workdir = _resolve_workdir(args.workdir)
+    env_path = workdir / args.env_file
+    existing = _read_env_kv(env_path)
+
+    current_base_url = existing.get("ANIMAL_GS_AGENT_LLM_BASE_URL", "https://api.deepseek.com")
+    current_model = existing.get("ANIMAL_GS_AGENT_LLM_MODEL", "deepseek-chat")
+    current_api_token = existing.get("ANIMAL_GS_AGENT_API_TOKEN", secrets.token_urlsafe(32))
+    current_policy = existing.get("ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY", "auto")
+    current_pipeline_dir = existing.get(
+        "ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR",
+        str(workdir / "pipeline"),
+    )
+    current_output_root = existing.get(
+        "ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT",
+        str(workdir / "runs"),
+    )
+    current_submit_script = existing.get("ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT", "")
+    current_allowed_roots = existing.get(
+        "ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS",
+        str((workdir.parent / "data").resolve()),
+    )
+    existing_api_key = existing.get("ANIMAL_GS_AGENT_LLM_API_KEY", "")
+
+    base_url = _prompt_text("LLM base_url", current_base_url)
+    model = _prompt_text("LLM model", current_model)
+    api_key = _prompt_secret("LLM api_key (input hidden, leave blank to keep existing)")
+    if not api_key:
+        api_key = existing_api_key
+    api_token = _prompt_text("API auth token", current_api_token)
+    execution_policy = _prompt_text("workflow execution policy", current_policy)
+    pipeline_dir = _prompt_text("workflow pipeline dir", current_pipeline_dir)
+    output_root = _prompt_text("workflow output root", current_output_root)
+    submit_script = _prompt_text("slurm submit script", current_submit_script)
+    allowed_roots = _prompt_text("allowed data roots (comma-separated)", current_allowed_roots)
+
+    updates = {
+        "ANIMAL_GS_AGENT_LLM_BASE_URL": base_url,
+        "ANIMAL_GS_AGENT_LLM_API_KEY": api_key,
+        "ANIMAL_GS_AGENT_LLM_MODEL": model,
+        "ANIMAL_GS_AGENT_API_TOKEN": api_token,
+        "ANIMAL_GS_AGENT_WORKFLOW_EXECUTION_POLICY": execution_policy,
+        "ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR": pipeline_dir,
+        "ANIMAL_GS_AGENT_WORKFLOW_OUTPUT_ROOT": output_root,
+        "ANIMAL_GS_AGENT_SLURM_SUBMIT_SCRIPT": submit_script,
+        "ANIMAL_GS_AGENT_ALLOWED_DATA_ROOTS": allowed_roots,
+    }
+    _upsert_env_file(env_path, updates)
+    print(f"[gsagent] wrote configuration: {env_path}")
+    print("[gsagent] next step: gsagent preflight --workdir", workdir)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="gsagent",
@@ -266,6 +365,15 @@ def build_parser() -> argparse.ArgumentParser:
     llm_check.add_argument("--env-file", default=".env", help="env file name in workdir")
     llm_check.add_argument("--message", default=None, help="probe message for llm check")
     llm_check.set_defaults(func=cmd_llm_check)
+
+    configure = subparsers.add_parser(
+        "configure",
+        aliases=["init"],
+        help="interactive setup for API key/token and runtime .env",
+    )
+    configure.add_argument("--workdir", default=".", help="working directory with .env and runtime files")
+    configure.add_argument("--env-file", default=".env", help="env file name in workdir")
+    configure.set_defaults(func=cmd_configure)
 
     return parser
 
