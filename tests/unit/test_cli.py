@@ -6,6 +6,7 @@ import pytest
 
 from animal_gs_agent.cli import (
     _extract_task_fields,
+    _is_analysis_intent,
     _prepare_runtime,
     _required_command_missing,
     _resolve_workdir,
@@ -141,6 +142,44 @@ def test_extract_task_fields_from_natural_language() -> None:
     assert fields["trait_name"] == "grain_yield"
     assert fields["phenotype_path"] == "/data/pheno.csv"
     assert fields["genotype_path"] == "/data/geno.vcf"
+
+
+def test_chat_intent_gate_allows_small_talk_without_running_job(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    calls = {"create_job": 0}
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_API_KEY", "secret-key")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_MODEL", "deepseek-chat")
+    monkeypatch.setattr("builtins.input", lambda _: "退出")
+    monkeypatch.setattr(
+        "animal_gs_agent.cli.create_job",
+        lambda *args, **kwargs: calls.__setitem__("create_job", calls["create_job"] + 1),
+    )
+
+    args = SimpleNamespace(
+        workdir=str(tmp_path),
+        env_file=".env",
+        message="你好",
+        trait_name=None,
+        phenotype_path=None,
+        genotype_path=None,
+    )
+
+    exit_code = cmd_chat(args)
+
+    assert exit_code == 0
+    assert calls["create_job"] == 0
+    output = capsys.readouterr().out
+    assert "你好，我在" in output
+    assert "trait_name / 性状" not in output
+
+
+def test_analysis_intent_detection() -> None:
+    assert _is_analysis_intent("请对 grain_yield 做GS 输出候选个体") is True
+    assert _is_analysis_intent("你好") is False
 
 
 def test_chat_command_runs_job_from_single_message(tmp_path: Path, monkeypatch, capsys) -> None:

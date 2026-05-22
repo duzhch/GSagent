@@ -136,6 +136,37 @@ def _extract_task_fields(message: str) -> dict[str, str | None]:
     }
 
 
+def _is_analysis_intent(message: str) -> bool:
+    lowered = message.lower()
+    intent_tokens = [
+        "gs",
+        "gblup",
+        "gebv",
+        "genomic selection",
+        "基因组选择",
+        "基因组选",
+        "候选个体",
+        "育种值",
+        "基因型",
+        "表型",
+        "phenotype",
+        "genotype",
+        "trait",
+    ]
+    return any(token in lowered for token in intent_tokens)
+
+
+def _is_exit_message(message: str) -> bool:
+    return message.strip().lower() in {"退出", "exit", "quit", "q", "bye"}
+
+
+def _small_talk_reply(message: str) -> str:
+    lowered = message.strip().lower()
+    if lowered in {"你好", "hi", "hello", "hey"}:
+        return "你好，我在。请描述 GS 任务，并给出性状、表型文件、基因型文件。"
+    return "我在。请描述 GS/基因组选择任务；闲聊不会启动分析。"
+
+
 def _read_env_kv(env_path: Path) -> dict[str, str]:
     if not env_path.exists():
         return {}
@@ -331,6 +362,17 @@ def cmd_chat(args: argparse.Namespace) -> int:
     if not message:
         print("[gsagent] 唤醒成功。直接描述 GS 任务，包含性状、表型文件、基因型文件。")
         message = _prompt_text("你")
+    if not message:
+        print("[gsagent] 未收到任务。")
+        return 2
+    while message and not _is_analysis_intent(message):
+        print(f"[gsagent] {_small_talk_reply(message)}")
+        if args.message:
+            return 0
+        message = _prompt_text("你")
+        if _is_exit_message(message):
+            print("[gsagent] 已退出。")
+            return 0
     if not message:
         print("[gsagent] 未收到任务。")
         return 2
