@@ -6,6 +6,7 @@ import argparse
 from getpass import getpass
 import os
 from pathlib import Path
+import re
 import secrets
 import shutil
 import sys
@@ -13,8 +14,15 @@ import time
 
 import uvicorn
 
+from animal_gs_agent.agent.task_understanding import understand_task
 from animal_gs_agent.config import LLMSettings, get_settings
 from animal_gs_agent.llm.client import OpenAICompatibleLLMClient
+from animal_gs_agent.schemas.jobs import JobSubmissionRequest
+from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
+from animal_gs_agent.services.job_service import create_job, run_job
+from animal_gs_agent.services.report_service import build_job_report
+from animal_gs_agent.services.workflow_result_service import parse_workflow_outputs
+from animal_gs_agent.services.workflow_service import execute_fixed_workflow
 from animal_gs_agent.services.worker_service import process_next_queued_job
 
 
@@ -87,6 +95,45 @@ def _prompt_text(label: str, default: str | None = None) -> str:
 
 def _prompt_secret(label: str) -> str:
     return getpass(f"{label}: ").strip()
+
+
+def _extract_value(patterns: list[str], text: str) -> str | None:
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            value = match.group(1).strip().strip("，,。;；")
+            if value:
+                return value
+    return None
+
+
+def _extract_task_fields(message: str) -> dict[str, str | None]:
+    trait_name = _extract_value(
+        [
+            r"(?:trait_name|trait|性状)\s*[:=]\s*([^\s,，;；]+)",
+            r"对\s*([A-Za-z0-9_.-]+)\s*(?:做|进行).{0,8}(?:GS|基因组选择)",
+        ],
+        message,
+    )
+    phenotype_path = _extract_value(
+        [
+            r"(?:phenotype_path|phenotype|pheno)\s*[:=]\s*([^\s,，;；]+)",
+            r"(?:表型文件|表型数据|表型)\s*(?:是|为|在|:|：)\s*([^\s,，;；]+)",
+        ],
+        message,
+    )
+    genotype_path = _extract_value(
+        [
+            r"(?:genotype_path|genotype|geno)\s*[:=]\s*([^\s,，;；]+)",
+            r"(?:基因型文件|基因型数据|基因型)\s*(?:是|为|在|:|：)\s*([^\s,，;；]+)",
+        ],
+        message,
+    )
+    return {
+        "trait_name": trait_name,
+        "phenotype_path": phenotype_path,
+        "genotype_path": genotype_path,
+    }
 
 
 def _read_env_kv(env_path: Path) -> dict[str, str]:
@@ -267,6 +314,82 @@ def cmd_llm_check(args: argparse.Namespace) -> int:
     return 2
 
 
+def _print_report_summary(report) -> None:
+    print("\n[gsagent] AI report:")
+    print(report.report_text)
+    print("\n[gsagent] top candidates:")
+    for item in report.top_candidates[:10]:
+        print(f"  #{item.rank} {item.individual_id} GEBV={item.gebv:.4f}")
+    artifact = report.html_report_artifact
+    if artifact is not None:
+        print(f"\n[gsagent] HTML report: {artifact.artifact_path}")
+
+
+def cmd_chat(args: argparse.Namespace) -> int:
+    _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
+    message = (args.message or "").strip()
+    if not message:
+        print("[gsagent] 唤醒成功。直接描述 GS 任务，包含性状、表型文件、基因型文件。")
+        message = _prompt_text("你")
+    if not message:
+        print("[gsagent] 未收到任务。")
+        return 2
+
+    fields = _extract_task_fields(message)
+    trait_name = args.trait_name or fields["trait_name"] or _prompt_text("trait_name / 性状")
+    phenotype_path = args.phenotype_path or fields["phenotype_path"] or _prompt_text("phenotype_path / 表型文件")
+    genotype_path = args.genotype_path or fields["genotype_path"] or _prompt_text("genotype_path / 基因型文件")
+    if not trait_name or not phenotype_path or not genotype_path:
+        print("[gsagent] 缺少 trait_name / phenotype_path / genotype_path，无法启动分析。")
+        return 2
+
+    settings = get_settings()
+    if not settings.llm.base_url or not settings.llm.api_key or not settings.llm.model:
+        print("[gsagent] AI 未接入：无法解析自然语言任务。")
+        return 2
+
+    print("[gsagent] 唤醒成功，开始解析任务...")
+    try:
+        task_understanding = understand_task(
+            message,
+            llm_client=OpenAICompatibleLLMClient(settings.llm),
+        )
+        payload = JobSubmissionRequest(
+            user_message=message,
+            trait_name=trait_name,
+            phenotype_path=phenotype_path,
+            genotype_path=genotype_path,
+        )
+        dataset_profile = build_dataset_profile(payload)
+        job = create_job(
+            payload,
+            task_understanding=task_understanding,
+            dataset_profile=dataset_profile,
+        )
+        print(f"[gsagent] job_id={job.job_id} status={job.status}")
+        completed = run_job(
+            job.job_id,
+            workflow_executor=execute_fixed_workflow,
+            workflow_output_parser=parse_workflow_outputs,
+        )
+        if completed is None:
+            print("[gsagent] 分析失败：job 不存在。")
+            return 1
+        print(f"[gsagent] run_status={completed.status}")
+        if completed.status != "completed":
+            error = completed.execution_error or "not_completed"
+            detail = completed.execution_error_detail or ""
+            print(f"[gsagent] 分析未完成：{error} {detail}".strip())
+            return 1
+        report = build_job_report(completed)
+    except Exception as exc:
+        print(f"[gsagent] 分析失败：{exc}")
+        return 1
+
+    _print_report_summary(report)
+    return 0
+
+
 def cmd_configure(args: argparse.Namespace) -> int:
     workdir = _resolve_workdir(args.workdir)
     env_path = workdir / args.env_file
@@ -365,6 +488,24 @@ def build_parser() -> argparse.ArgumentParser:
     llm_check.add_argument("--env-file", default=".env", help="env file name in workdir")
     llm_check.add_argument("--message", default=None, help="probe message for llm check")
     llm_check.set_defaults(func=cmd_llm_check)
+
+    chat = subparsers.add_parser("chat", help="wake the GS agent and run a natural-language GS task")
+    chat.add_argument("--workdir", default=".", help="working directory with .env and runtime files")
+    chat.add_argument("--env-file", default=".env", help="env file name in workdir")
+    chat.add_argument("--message", "-m", default=None, help="natural-language GS task")
+    chat.add_argument("--trait-name", default=None, help="trait name override")
+    chat.add_argument("--phenotype-path", default=None, help="phenotype file path override")
+    chat.add_argument("--genotype-path", default=None, help="genotype file path override")
+    chat.set_defaults(func=cmd_chat)
+
+    run = subparsers.add_parser("run", help="one-shot natural-language GS task")
+    run.add_argument("message", nargs="?", default=None, help="natural-language GS task")
+    run.add_argument("--workdir", default=".", help="working directory with .env and runtime files")
+    run.add_argument("--env-file", default=".env", help="env file name in workdir")
+    run.add_argument("--trait-name", default=None, help="trait name override")
+    run.add_argument("--phenotype-path", default=None, help="phenotype file path override")
+    run.add_argument("--genotype-path", default=None, help="genotype file path override")
+    run.set_defaults(func=cmd_chat)
 
     configure = subparsers.add_parser(
         "configure",

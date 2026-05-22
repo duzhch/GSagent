@@ -5,10 +5,12 @@ from types import SimpleNamespace
 import pytest
 
 from animal_gs_agent.cli import (
+    _extract_task_fields,
     _prepare_runtime,
     _required_command_missing,
     _resolve_workdir,
     build_parser,
+    cmd_chat,
     cmd_configure,
 )
 
@@ -50,7 +52,7 @@ def test_parser_contains_expected_subcommands() -> None:
     parser = build_parser()
     action = next(item for item in parser._actions if item.dest == "command")
     subcommands = set(action.choices.keys())
-    assert {"preflight", "serve", "worker", "print-env", "llm-check", "configure", "init"}.issubset(
+    assert {"preflight", "serve", "worker", "print-env", "llm-check", "configure", "init", "chat", "run"}.issubset(
         subcommands
     )
 
@@ -83,7 +85,7 @@ def test_configure_creates_env_with_interactive_inputs(
         ]
     )
     monkeypatch.setattr("builtins.input", lambda _: next(user_inputs))
-    monkeypatch.setattr("animal_gs_agent.cli.getpass", lambda _: "sk-test-123")
+    monkeypatch.setattr("animal_gs_agent.cli.getpass", lambda _: "test-secret-123")
     monkeypatch.setattr("animal_gs_agent.cli.secrets.token_urlsafe", lambda _: "token-demo")
 
     args = SimpleNamespace(workdir=str(tmp_path), env_file=".env")
@@ -92,7 +94,7 @@ def test_configure_creates_env_with_interactive_inputs(
     assert exit_code == 0
     env_content = (tmp_path / ".env").read_text(encoding="utf-8")
     assert "ANIMAL_GS_AGENT_LLM_BASE_URL=https://api.deepseek.com" in env_content
-    assert "ANIMAL_GS_AGENT_LLM_API_KEY=sk-test-123" in env_content
+    assert "ANIMAL_GS_AGENT_LLM_API_KEY=test-secret-123" in env_content
     assert "ANIMAL_GS_AGENT_LLM_MODEL=deepseek-chat" in env_content
     assert "ANIMAL_GS_AGENT_API_TOKEN=token-demo" in env_content
     assert f"ANIMAL_GS_AGENT_WORKFLOW_PIPELINE_DIR={tmp_path / 'pipeline'}" in env_content
@@ -129,3 +131,84 @@ def test_configure_keeps_existing_secret_when_blank_input(
     loaded = env_file.read_text(encoding="utf-8")
     assert "ANIMAL_GS_AGENT_LLM_API_KEY=existing-key" in loaded
     assert "ANIMAL_GS_AGENT_API_TOKEN=existing-token" in loaded
+
+
+def test_extract_task_fields_from_natural_language() -> None:
+    fields = _extract_task_fields(
+        "请对 grain_yield 做GS，phenotype_path=/data/pheno.csv genotype_path=/data/geno.vcf"
+    )
+
+    assert fields["trait_name"] == "grain_yield"
+    assert fields["phenotype_path"] == "/data/pheno.csv"
+    assert fields["genotype_path"] == "/data/geno.vcf"
+
+
+def test_chat_command_runs_job_from_single_message(tmp_path: Path, monkeypatch, capsys) -> None:
+    pheno = tmp_path / "pheno.csv"
+    geno = tmp_path / "geno.vcf"
+    pheno.write_text("animal_id,daily_gain\nA1,1.0\n", encoding="utf-8")
+    geno.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_API_KEY", "secret-key")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_MODEL", "deepseek-chat")
+
+    class FakeTask:
+        candidate_fixed_effects = []
+
+    class FakeProfile:
+        risk_tags = []
+
+    class FakeJob:
+        job_id = "job-chat"
+        status = "queued"
+        trait_name = "daily_gain"
+        workflow_result_dir = None
+
+    class FakeCompleted:
+        job_id = "job-chat"
+        status = "completed"
+        trait_name = "daily_gain"
+        workflow_result_dir = str(tmp_path / "runs" / "job-chat")
+
+    class FakeCandidate:
+        individual_id = "A1001"
+        gebv = 1.23
+        rank = 1
+
+    class FakeArtifact:
+        artifact_path = str(tmp_path / "runs" / "job-chat" / "reports" / "gs_report.html")
+
+    class FakeReport:
+        report_text = "AI 生成：A1001 是优先候选。"
+        top_candidates = [FakeCandidate()]
+        html_report_artifact = FakeArtifact()
+
+    monkeypatch.setattr("animal_gs_agent.cli.understand_task", lambda message, llm_client: FakeTask())
+    monkeypatch.setattr("animal_gs_agent.cli.build_dataset_profile", lambda payload: FakeProfile())
+    monkeypatch.setattr(
+        "animal_gs_agent.cli.create_job",
+        lambda payload, task_understanding, dataset_profile: FakeJob(),
+    )
+    monkeypatch.setattr("animal_gs_agent.cli.run_job", lambda *args, **kwargs: FakeCompleted())
+    monkeypatch.setattr("animal_gs_agent.cli.build_job_report", lambda job: FakeReport())
+
+    args = SimpleNamespace(
+        workdir=str(tmp_path),
+        env_file=".env",
+        message=(
+            f"请对 daily_gain 做GS phenotype_path={pheno} "
+            f"genotype_path={geno} 输出候选个体"
+        ),
+        trait_name=None,
+        phenotype_path=None,
+        genotype_path=None,
+    )
+
+    exit_code = cmd_chat(args)
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "唤醒成功" in output
+    assert "job_id=job-chat" in output
+    assert "A1001" in output
+    assert "gs_report.html" in output
