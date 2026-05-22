@@ -26,5 +26,5 @@ class AblationBenchmarkItem(BaseModel):
 
 
 class PlotExportArtifact(BaseModel):
-    format: Literal["csv"]
+    format: Literal["csv", "html"]
     artifact_path: str

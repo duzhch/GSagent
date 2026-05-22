@@ -9,6 +9,7 @@ from animal_gs_agent.services.benchmark_service import (
     build_baseline_benchmark,
     export_plot_artifact,
 )
+from animal_gs_agent.services.html_report_service import export_gs_html_report
 from animal_gs_agent.services.knowledge_service import (
     build_knowledge_documents,
     build_recommendation_citations,
@@ -141,6 +142,7 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
         baseline_report=benchmark_baseline,
         ablation_report=benchmark_ablation,
     )
+    html_report_artifact = export_gs_html_report(job=job, report_text=report_text)
 
     return JobReportResponse(
         job_id=job.job_id,
@@ -157,4 +159,5 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
         benchmark_baseline=benchmark_baseline,
         benchmark_ablation=benchmark_ablation,
         benchmark_plot_artifact=benchmark_plot_artifact,
+        html_report_artifact=html_report_artifact,
     )

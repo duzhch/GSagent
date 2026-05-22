@@ -188,6 +188,7 @@ class JobReportResponse(BaseModel):
     benchmark_baseline: BaselineBenchmarkReport | None = None
     benchmark_ablation: list[AblationBenchmarkItem] = Field(default_factory=list)
     benchmark_plot_artifact: PlotExportArtifact | None = None
+    html_report_artifact: PlotExportArtifact | None = None
 
 
 class JobDecisionTraceResponse(BaseModel):
