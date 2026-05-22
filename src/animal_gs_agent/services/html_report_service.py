@@ -173,6 +173,35 @@ def _ai_reflection(job: JobStatusResponse, pearson: str, rmse: str) -> str:
     return "\n".join(f"<li>{escape(note)}</li>" for note in notes)
 
 
+def _source_file_items(job: JobStatusResponse) -> str:
+    if job.workflow_summary is None or not job.workflow_summary.source_files:
+        return "<li>No source files recorded.</li>"
+    return "\n".join(f"<li>{escape(path)}</li>" for path in job.workflow_summary.source_files)
+
+
+def _snapshot_rows(
+    *,
+    job: JobStatusResponse,
+    pearson: str,
+    rmse: str,
+    risk_text: str,
+    fixed_effect_text: str,
+) -> str:
+    rows = [
+        ("Trait", job.trait_name),
+        ("Backend", job.workflow_backend or "unknown"),
+        ("Population", job.task_understanding.population_description or "not specified"),
+        ("Fixed effects", fixed_effect_text),
+        ("Pearson r", pearson),
+        ("RMSE", rmse),
+        ("Risk tags", risk_text),
+    ]
+    return "\n".join(
+        f"<div class=\"snapshot-row\"><span>{escape(label)}</span><strong>{escape(value)}</strong></div>"
+        for label, value in rows
+    )
+
+
 def export_gs_html_report(
     *,
     job: JobStatusResponse,
@@ -203,7 +232,7 @@ def export_gs_html_report(
     user_input = _first_user_input(job)
 
     html = f"""<!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -232,6 +261,163 @@ def export_gs_html_report(
       width: min(1160px, calc(100% - 32px));
       margin: 0 auto;
       padding: 36px 0 56px;
+    }}
+    .cover {{
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, .55fr);
+      gap: 24px;
+      align-items: stretch;
+      border-bottom: 3px solid var(--ink);
+      padding-bottom: 28px;
+    }}
+    .cover-main {{
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }}
+    .report-layout {{
+      display: grid;
+      grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+      margin-top: 22px;
+    }}
+    .side-rail {{
+      position: sticky;
+      top: 18px;
+      display: grid;
+      gap: 14px;
+    }}
+    .rail-card {{
+      background: #15202b;
+      color: #f7fbfa;
+      padding: 18px;
+      border: 1px solid #15202b;
+    }}
+    .rail-card.light {{
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+    }}
+    .rail-card h2 {{
+      margin: 0 0 14px;
+      font-size: 17px;
+    }}
+    .snapshot-row {{
+      display: grid;
+      gap: 5px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.16);
+    }}
+    .rail-card.light .snapshot-row {{
+      border-bottom-color: var(--line);
+    }}
+    .snapshot-row span {{
+      color: #aebfbd;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }}
+    .rail-card.light .snapshot-row span {{
+      color: var(--muted);
+    }}
+    .snapshot-row strong {{
+      font-size: 14px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }}
+    .source-list {{
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }}
+    .report-flow {{
+      display: grid;
+      gap: 16px;
+    }}
+    .section-block {{
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--line);
+      padding: 22px;
+    }}
+    .section-kicker {{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--accent-2);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }}
+    .section-kicker::after {{
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: var(--line);
+    }}
+    .section-title {{
+      margin: 0 0 14px;
+      font-size: 24px;
+    }}
+    .two-column {{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }}
+    .content-card {{
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 16px;
+    }}
+    .content-card h3 {{
+      margin: 0 0 10px;
+      font-size: 16px;
+    }}
+    .timeline {{
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }}
+    .timeline-row {{
+      display: grid;
+      grid-template-columns: 170px 120px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }}
+    .step-table td:first-child {{
+      font-weight: 800;
+      color: var(--accent);
+    }}
+    .recommendation-card {{
+      background: var(--ink);
+      color: white;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 260px;
+    }}
+    .recommendation-card .label {{
+      color: #b7c7c4;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 800;
+    }}
+    .recommendation-card .value {{
+      margin-top: 16px;
+      font-size: 32px;
+      line-height: 1.08;
+      font-weight: 900;
     }}
     .hero {{
       display: grid;
@@ -397,8 +583,10 @@ def export_gs_html_report(
       margin-top: 18px;
     }}
     @media (max-width: 820px) {{
-      .hero, .audit {{ grid-template-columns: 1fr; }}
+      .cover, .hero, .audit, .report-layout, .two-column {{ grid-template-columns: 1fr; }}
       .grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+      .side-rail {{ position: static; }}
+      .timeline-row {{ grid-template-columns: 1fr; }}
     }}
     @media (max-width: 520px) {{
       .page {{ width: min(100% - 20px, 1160px); padding-top: 22px; }}
@@ -409,97 +597,135 @@ def export_gs_html_report(
 </head>
 <body>
   <main class="page">
-    <section class="hero">
-      <div>
+    <section class="cover">
+      <div class="cover-main">
         <p class="eyebrow">Genomic Selection Harness</p>
         <h1>GS Candidate Decision Report</h1>
         <p class="summary">{escape(report_text)}</p>
+        <div class="grid" aria-label="Executive summary">
+          <div class="metric"><span>Total candidates</span><strong>{job.workflow_summary.total_candidates}</strong></div>
+          <div class="metric"><span>Pearson r</span><strong>{pearson}</strong></div>
+          <div class="metric"><span>RMSE</span><strong>{rmse}</strong></div>
+          <div class="metric"><span>Risk tags</span><strong>{escape(risk_text)}</strong></div>
+        </div>
       </div>
-      <aside class="decision-card">
+      <aside class="recommendation-card">
         <div>
-          <div class="label">Recommended candidate</div>
+          <div class="label">Candidate Recommendation</div>
           <div class="value">{escape(top_candidate_text)}</div>
         </div>
-        <div class="label">Trait: {escape(job.trait_name)}</div>
+        <div>
+          <div class="label">Trait</div>
+          <div>{escape(job.trait_name)}</div>
+        </div>
       </aside>
     </section>
 
-    <section class="section">
-      <h2>User Input</h2>
-      <div class="input-box">{escape(user_input)}</div>
-    </section>
+    <section class="report-layout">
+      <aside class="side-rail">
+        <div class="rail-card">
+          <h2>Model & Data Snapshot</h2>
+          {_snapshot_rows(job=job, pearson=pearson, rmse=rmse, risk_text=risk_text, fixed_effect_text=fixed_effect_text)}
+        </div>
+        <div class="rail-card light">
+          <h2>Source Files</h2>
+          <ul class="source-list">
+            {_source_file_items(job)}
+          </ul>
+        </div>
+      </aside>
 
-    <section class="section">
-      <h2>AI Task Plan</h2>
-      <ul class="plan-list">
-        {_plan_items(job)}
-      </ul>
-    </section>
+      <div class="report-flow">
+        <section class="section-block">
+          <div class="section-kicker">01 用户输入 / User Input</div>
+          <h2 class="section-title">Input Prompt</h2>
+          <div class="input-box">{escape(user_input)}</div>
+        </section>
 
-    <section class="section">
-      <h2>Execution Log</h2>
-      <table class="log-table">
-        <thead>
-          <tr><th>Time</th><th>Phase</th><th>Message</th></tr>
-        </thead>
-        <tbody>
-          {_event_rows(job)}
-        </tbody>
-      </table>
-    </section>
+        <section class="section-block">
+          <div class="section-kicker">02 AI 任务规划 / AI Task Plan</div>
+          <h2 class="section-title">Agent Planning Board</h2>
+          <div class="two-column">
+            <div class="content-card">
+              <h3>Task decomposition</h3>
+              <ul class="plan-list">
+                {_plan_items(job)}
+              </ul>
+            </div>
+            <div class="content-card">
+              <h3>Execution assumption</h3>
+              <ul class="reflection-list">
+                <li>Use structured task understanding to map user intent to a GS ranking task.</li>
+                <li>Keep numerical estimation inside the fixed workflow and use AI for planning, explanation, and audit context.</li>
+                <li>Return candidate individuals as the primary actionable output.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
-    <section class="section">
-      <h2>Execution Steps</h2>
-      <table>
-        <thead>
-          <tr><th>Decision ID</th><th>Agent</th><th>Action</th><th>Status</th><th>Rationale</th></tr>
-        </thead>
-        <tbody>
-          {_trace_rows(job)}
-        </tbody>
-      </table>
-    </section>
+        <section class="section-block">
+          <div class="section-kicker">03 执行日志 / Execution Log</div>
+          <h2 class="section-title">Run Timeline</h2>
+          <table class="log-table">
+            <thead>
+              <tr><th>Time</th><th>Phase</th><th>Message</th></tr>
+            </thead>
+            <tbody>
+              {_event_rows(job)}
+            </tbody>
+          </table>
+        </section>
 
-    <section class="section">
-      <h2>GS Results</h2>
-      <section class="grid" aria-label="Run summary">
-        <div class="metric"><span>Total candidates</span><strong>{job.workflow_summary.total_candidates}</strong></div>
-        <div class="metric"><span>Pearson r</span><strong>{pearson}</strong></div>
-        <div class="metric"><span>RMSE</span><strong>{rmse}</strong></div>
-        <div class="metric"><span>Risk tags</span><strong>{escape(risk_text)}</strong></div>
-      </section>
-      <div class="result-block">
-        <h2>Candidate GEBV Ranking</h2>
-        <div class="chart-shell">{_candidate_svg(candidates)}</div>
-      </div>
-      <div class="result-block">
-        <h2>Candidate Individuals</h2>
-        <table>
-          <thead>
-            <tr><th>Rank</th><th>Individual ID</th><th>GEBV</th><th>Decision tag</th></tr>
-          </thead>
-          <tbody>
-            {_candidate_rows(candidates)}
-          </tbody>
-        </table>
-      </div>
-    </section>
+        <section class="section-block">
+          <div class="section-kicker">04 执行步骤 / Execution Steps</div>
+          <h2 class="section-title">Step Evidence</h2>
+          <table class="step-table">
+            <thead>
+              <tr><th>Decision ID</th><th>Agent</th><th>Action</th><th>Status</th><th>Rationale</th></tr>
+            </thead>
+            <tbody>
+              {_trace_rows(job)}
+            </tbody>
+          </table>
+        </section>
 
-    <section class="section">
-      <h2>AI Reflection</h2>
-      <ul class="reflection-list">
-        {_ai_reflection(job, pearson, rmse)}
-      </ul>
-    </section>
+        <section class="section-block">
+          <div class="section-kicker">05 GS 结果 / GS Results</div>
+          <h2 class="section-title">Candidate Ranking and Selection Table</h2>
+          <div class="result-block">
+            <h2>Candidate GEBV Ranking</h2>
+            <div class="chart-shell">{_candidate_svg(candidates)}</div>
+          </div>
+          <div class="result-block">
+            <h2>Candidate Individuals</h2>
+            <table>
+              <thead>
+                <tr><th>Rank</th><th>Individual ID</th><th>GEBV</th><th>Decision tag</th></tr>
+              </thead>
+              <tbody>
+                {_candidate_rows(candidates)}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-    <section class="section audit">
-      <div class="note">
-        <strong>Agent decision context</strong><br>
-        Fixed effects considered: {escape(fixed_effect_text)}. Workflow backend: {escape(job.workflow_backend or "unknown")}.
-      </div>
-      <div class="note">
-        <strong>Audit note</strong><br>
-        Review population structure, phenotype outliers, leakage risk, and business constraints before final breeding deployment.
+        <section class="section-block">
+          <div class="section-kicker">06 AI 反思 / AI Reflection</div>
+          <h2 class="section-title">Decision Review</h2>
+          <div class="two-column">
+            <div class="content-card">
+              <h3>Reflection</h3>
+              <ul class="reflection-list">
+                {_ai_reflection(job, pearson, rmse)}
+              </ul>
+            </div>
+            <div class="content-card">
+              <h3>Audit context</h3>
+              <p class="summary">Fixed effects considered: {escape(fixed_effect_text)}. Workflow backend: {escape(job.workflow_backend or "unknown")}.</p>
+              <p class="summary">Review population structure, phenotype outliers, leakage risk, and business constraints before final breeding deployment.</p>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
   </main>

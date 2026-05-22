@@ -119,6 +119,15 @@ def test_export_gs_html_report_writes_standalone_candidate_report(tmp_path) -> N
     assert "Run genomic selection for daily_gain and return candidate individuals" in html
     assert "workflow completed" in html
     assert "workflow_completed_success" in html
+    assert "report-layout" in html
+    assert "01 用户输入 / User Input" in html
+    assert "02 AI 任务规划 / AI Task Plan" in html
+    assert "03 执行日志 / Execution Log" in html
+    assert "04 执行步骤 / Execution Steps" in html
+    assert "05 GS 结果 / GS Results" in html
+    assert "06 AI 反思 / AI Reflection" in html
+    assert "Candidate Recommendation" in html
+    assert "Model & Data Snapshot" in html
 
 
 def test_build_job_report_exposes_html_report_artifact(tmp_path) -> None:

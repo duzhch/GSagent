@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,6 +28,163 @@
       width: min(1160px, calc(100% - 32px));
       margin: 0 auto;
       padding: 36px 0 56px;
+    }
+    .cover {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, .55fr);
+      gap: 24px;
+      align-items: stretch;
+      border-bottom: 3px solid var(--ink);
+      padding-bottom: 28px;
+    }
+    .cover-main {
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .report-layout {
+      display: grid;
+      grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+      margin-top: 22px;
+    }
+    .side-rail {
+      position: sticky;
+      top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    .rail-card {
+      background: #15202b;
+      color: #f7fbfa;
+      padding: 18px;
+      border: 1px solid #15202b;
+    }
+    .rail-card.light {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .rail-card h2 {
+      margin: 0 0 14px;
+      font-size: 17px;
+    }
+    .snapshot-row {
+      display: grid;
+      gap: 5px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.16);
+    }
+    .rail-card.light .snapshot-row {
+      border-bottom-color: var(--line);
+    }
+    .snapshot-row span {
+      color: #aebfbd;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .rail-card.light .snapshot-row span {
+      color: var(--muted);
+    }
+    .snapshot-row strong {
+      font-size: 14px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .source-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+    .report-flow {
+      display: grid;
+      gap: 16px;
+    }
+    .section-block {
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--line);
+      padding: 22px;
+    }
+    .section-kicker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--accent-2);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .section-kicker::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: var(--line);
+    }
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 24px;
+    }
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .content-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 16px;
+    }
+    .content-card h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+    .timeline {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 170px 120px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .step-table td:first-child {
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .recommendation-card {
+      background: var(--ink);
+      color: white;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 260px;
+    }
+    .recommendation-card .label {
+      color: #b7c7c4;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 800;
+    }
+    .recommendation-card .value {
+      margin-top: 16px;
+      font-size: 32px;
+      line-height: 1.08;
+      font-weight: 900;
     }
     .hero {
       display: grid;
@@ -193,8 +350,10 @@
       margin-top: 18px;
     }
     @media (max-width: 820px) {
-      .hero, .audit { grid-template-columns: 1fr; }
+      .cover, .hero, .audit, .report-layout, .two-column { grid-template-columns: 1fr; }
       .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .side-rail { position: static; }
+      .timeline-row { grid-template-columns: 1fr; }
     }
     @media (max-width: 520px) {
       .page { width: min(100% - 20px, 1160px); padding-top: 22px; }
@@ -205,75 +364,118 @@
 </head>
 <body>
   <main class="page">
-    <section class="hero">
-      <div>
+    <section class="cover">
+      <div class="cover-main">
         <p class="eyebrow">Genomic Selection Harness</p>
         <h1>GS Candidate Decision Report</h1>
         <p class="summary">Offline demo run parsed from the packaged GS workflow. Top candidates are ranked by GEBV and prepared for breeding decision review.</p>
+        <div class="grid" aria-label="Executive summary">
+          <div class="metric"><span>Total candidates</span><strong>500</strong></div>
+          <div class="metric"><span>Pearson r</span><strong>0.9322</strong></div>
+          <div class="metric"><span>RMSE</span><strong>6012.1200</strong></div>
+          <div class="metric"><span>Risk tags</span><strong>none</strong></div>
+        </div>
       </div>
-      <aside class="decision-card">
+      <aside class="recommendation-card">
         <div>
-          <div class="label">Recommended candidate</div>
+          <div class="label">Candidate Recommendation</div>
           <div class="value">WHEAT_0415 / GEBV 1036.3687</div>
         </div>
-        <div class="label">Trait: grain_yield</div>
+        <div>
+          <div class="label">Trait</div>
+          <div>grain_yield</div>
+        </div>
       </aside>
     </section>
 
-    <section class="section">
-      <h2>User Input</h2>
-      <div class="input-box">Run genomic selection for grain_yield and return candidate individuals</div>
-    </section>
+    <section class="report-layout">
+      <aside class="side-rail">
+        <div class="rail-card">
+          <h2>Model & Data Snapshot</h2>
+          <div class="snapshot-row"><span>Trait</span><strong>grain_yield</strong></div>
+<div class="snapshot-row"><span>Backend</span><strong>offline_nextflow_gblup</strong></div>
+<div class="snapshot-row"><span>Population</span><strong>demo breeding population</strong></div>
+<div class="snapshot-row"><span>Fixed effects</span><strong>batch, sex</strong></div>
+<div class="snapshot-row"><span>Pearson r</span><strong>0.9322</strong></div>
+<div class="snapshot-row"><span>RMSE</span><strong>6012.1200</strong></div>
+<div class="snapshot-row"><span>Risk tags</span><strong>none</strong></div>
+        </div>
+        <div class="rail-card light">
+          <h2>Source Files</h2>
+          <ul class="source-list">
+            <li>gblup/gebv_predictions.csv</li>
+<li>gblup/model_summary.txt</li>
+          </ul>
+        </div>
+      </aside>
 
-    <section class="section">
-      <h2>AI Task Plan</h2>
-      <ul class="plan-list">
-        <li>Interpret task intent: rank candidates for genomic selection and return priority breeding candidates</li>
+      <div class="report-flow">
+        <section class="section-block">
+          <div class="section-kicker">01 用户输入 / User Input</div>
+          <h2 class="section-title">Input Prompt</h2>
+          <div class="input-box">Run genomic selection for grain_yield and return candidate individuals</div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-kicker">02 AI 任务规划 / AI Task Plan</div>
+          <h2 class="section-title">Agent Planning Board</h2>
+          <div class="two-column">
+            <div class="content-card">
+              <h3>Task decomposition</h3>
+              <ul class="plan-list">
+                <li>Interpret task intent: rank candidates for genomic selection and return priority breeding candidates</li>
 <li>Trait: grain_yield; fixed effects considered: batch, sex</li>
 <li>Check phenotype/genotype input structure and QC risk tags: none</li>
 <li>Candidate model pool: fixed GBLUP pipeline</li>
 <li>Validation protocol: use workflow metrics and audit review for this run</li>
-      </ul>
-    </section>
+              </ul>
+            </div>
+            <div class="content-card">
+              <h3>Execution assumption</h3>
+              <ul class="reflection-list">
+                <li>Use structured task understanding to map user intent to a GS ranking task.</li>
+                <li>Keep numerical estimation inside the fixed workflow and use AI for planning, explanation, and audit context.</li>
+                <li>Return candidate individuals as the primary actionable output.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
-    <section class="section">
-      <h2>Execution Log</h2>
-      <table class="log-table">
-        <thead>
-          <tr><th>Time</th><th>Phase</th><th>Message</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>2026-05-22T10:00:00Z</td><td><span class="pill">queued</span></td><td>job accepted and queued</td></tr>
-<tr><td>2026-05-22T10:01:00Z</td><td><span class="pill">running</span></td><td>workflow execution started</td></tr>
+        <section class="section-block">
+          <div class="section-kicker">03 执行日志 / Execution Log</div>
+          <h2 class="section-title">Run Timeline</h2>
+          <table class="log-table">
+            <thead>
+              <tr><th>Time</th><th>Phase</th><th>Message</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>2026-05-22T10:00:00Z</td><td><span class="pill">queued</span></td><td>job accepted and queued</td></tr>
+<tr><td>2026-05-22T10:01:00Z</td><td><span class="pill">running</span></td><td>GS workflow result parsing started</td></tr>
 <tr><td>2026-05-22T10:08:00Z</td><td><span class="pill">completed</span></td><td>workflow execution and parsing completed</td></tr>
-        </tbody>
-      </table>
-    </section>
+            </tbody>
+          </table>
+        </section>
 
-    <section class="section">
-      <h2>Execution Steps</h2>
-      <table>
-        <thead>
-          <tr><th>Decision ID</th><th>Agent</th><th>Action</th><th>Status</th><th>Rationale</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>intake_accept_job</td><td>supervisor</td><td>accept_job</td><td>success</td><td>request passed intake parsing and was admitted to job queue</td></tr>
-<tr><td>workflow_completed_success</td><td>supervisor</td><td>finalize_completed</td><td>success</td><td>workflow and parser both completed successfully</td></tr>
-        </tbody>
-      </table>
-    </section>
+        <section class="section-block">
+          <div class="section-kicker">04 执行步骤 / Execution Steps</div>
+          <h2 class="section-title">Step Evidence</h2>
+          <table class="step-table">
+            <thead>
+              <tr><th>Decision ID</th><th>Agent</th><th>Action</th><th>Status</th><th>Rationale</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>intake_accept_job</td><td>supervisor</td><td>accept_job</td><td>success</td><td>request passed intake parsing and was admitted to job queue</td></tr>
+<tr><td>workflow_completed_success</td><td>supervisor</td><td>finalize_completed</td><td>success</td><td>workflow outputs were parsed and candidate table was rendered</td></tr>
+            </tbody>
+          </table>
+        </section>
 
-    <section class="section">
-      <h2>GS Results</h2>
-      <section class="grid" aria-label="Run summary">
-        <div class="metric"><span>Total candidates</span><strong>500</strong></div>
-        <div class="metric"><span>Pearson r</span><strong>0.9322</strong></div>
-        <div class="metric"><span>RMSE</span><strong>6012.1200</strong></div>
-        <div class="metric"><span>Risk tags</span><strong>none</strong></div>
-      </section>
-      <div class="result-block">
-        <h2>Candidate GEBV Ranking</h2>
-        <div class="chart-shell"><svg viewBox="0 0 900 410" role="img" aria-label="Candidate GEBV Ranking">
+        <section class="section-block">
+          <div class="section-kicker">05 GS 结果 / GS Results</div>
+          <h2 class="section-title">Candidate Ranking and Selection Table</h2>
+          <div class="result-block">
+            <h2>Candidate GEBV Ranking</h2>
+            <div class="chart-shell"><svg viewBox="0 0 900 410" role="img" aria-label="Candidate GEBV Ranking">
 <text x="32" y="34" class="svg-title">Candidate GEBV Ranking</text>
 <line x1="220" y1="52" x2="830" y2="52" stroke="#d7dde4" stroke-width="1"/>
 <text x="32" y="94" class="svg-label">#1 WHEAT_0415</text>
@@ -307,15 +509,15 @@
 <rect x="220" y="382" width="438" height="20" rx="4" class="svg-bar"/>
 <text x="668" y="397" class="svg-score">745.7748</text>
 </svg></div>
-      </div>
-      <div class="result-block">
-        <h2>Candidate Individuals</h2>
-        <table>
-          <thead>
-            <tr><th>Rank</th><th>Individual ID</th><th>GEBV</th><th>Decision tag</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>1</td><td>WHEAT_0415</td><td>1036.3687</td><td>Priority selection candidate</td></tr>
+          </div>
+          <div class="result-block">
+            <h2>Candidate Individuals</h2>
+            <table>
+              <thead>
+                <tr><th>Rank</th><th>Individual ID</th><th>GEBV</th><th>Decision tag</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>WHEAT_0415</td><td>1036.3687</td><td>Priority selection candidate</td></tr>
 <tr><td>2</td><td>WHEAT_0009</td><td>996.4601</td><td>Priority selection candidate</td></tr>
 <tr><td>3</td><td>WHEAT_0038</td><td>995.1018</td><td>Priority selection candidate</td></tr>
 <tr><td>4</td><td>WHEAT_0319</td><td>954.1022</td><td>Validation shortlist</td></tr>
@@ -335,29 +537,31 @@
 <tr><td>18</td><td>WHEAT_0437</td><td>677.9166</td><td>Monitor only</td></tr>
 <tr><td>19</td><td>WHEAT_0086</td><td>672.2721</td><td>Monitor only</td></tr>
 <tr><td>20</td><td>WHEAT_0445</td><td>670.7172</td><td>Monitor only</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-    <section class="section">
-      <h2>AI Reflection</h2>
-      <ul class="reflection-list">
-        <li>Decision confidence depends on data QC, validation design, and model metrics. Current risk tags: none.</li>
+        <section class="section-block">
+          <div class="section-kicker">06 AI 反思 / AI Reflection</div>
+          <h2 class="section-title">Decision Review</h2>
+          <div class="two-column">
+            <div class="content-card">
+              <h3>Reflection</h3>
+              <ul class="reflection-list">
+                <li>Decision confidence depends on data QC, validation design, and model metrics. Current risk tags: none.</li>
 <li>Primary result: WHEAT_0415 ranked first with GEBV 1036.3687.</li>
 <li>Metric review: Pearson r=0.9322; RMSE=6012.1200. Compare these values with historical runs before deployment.</li>
 <li>Recommended next action: review top candidates with breeding constraints, population structure, and phenotype outlier diagnostics.</li>
-      </ul>
-    </section>
-
-    <section class="section audit">
-      <div class="note">
-        <strong>Agent decision context</strong><br>
-        Fixed effects considered: batch, sex. Workflow backend: offline_nextflow_gblup.
-      </div>
-      <div class="note">
-        <strong>Audit note</strong><br>
-        Review population structure, phenotype outliers, leakage risk, and business constraints before final breeding deployment.
+              </ul>
+            </div>
+            <div class="content-card">
+              <h3>Audit context</h3>
+              <p class="summary">Fixed effects considered: batch, sex. Workflow backend: offline_nextflow_gblup.</p>
+              <p class="summary">Review population structure, phenotype outliers, leakage risk, and business constraints before final breeding deployment.</p>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
   </main>
