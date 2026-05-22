@@ -1,7 +1,10 @@
 """Agent-facing report generation service."""
 
+import json
 import os
 
+from animal_gs_agent.config import get_settings
+from animal_gs_agent.llm.client import OpenAICompatibleLLMClient
 from animal_gs_agent.schemas.jobs import JobReportResponse, JobStatusResponse, RoleSpecificReport
 from animal_gs_agent.services.audit_service import build_claim_evidence_map, run_audit_checks
 from animal_gs_agent.services.benchmark_service import (
@@ -28,6 +31,57 @@ def _int_env(name: str, default: int) -> int:
     except ValueError:
         return default
     return max(1, value)
+
+
+def _base_report_text(
+    *,
+    job: JobStatusResponse,
+    fixed_effects: str,
+    risk_text: str,
+    recommendation_text: str,
+    top_preview: str,
+) -> str:
+    return (
+        f"Agent layer: interpreted trait `{job.trait_name}`, extracted fixed effects [{fixed_effects}], "
+        f"and validated dataset structure before execution (risk tags: {risk_text}).\n"
+        f"Agent recommendation: {recommendation_text}.\n"
+        f"Workflow layer: executed `{job.workflow_backend}` and produced ranked GEBV outputs from fixed GS pipeline.\n"
+        f"Top candidates preview: {top_preview}."
+    )
+
+
+def _ai_report_text(job: JobStatusResponse, base_report_text: str) -> str:
+    settings = get_settings()
+    if not settings.llm.base_url or not settings.llm.api_key or not settings.llm.model:
+        return "AI 未接入：当前报告未调用大模型生成摘要。"
+
+    payload = {
+        "task": "Generate report_text for a GS HTML report.",
+        "trait": job.trait_name,
+        "base_report_text": base_report_text,
+        "model_metrics": job.workflow_summary.model_metrics if job.workflow_summary else {},
+        "top_candidates": [
+            item.model_dump() for item in (job.workflow_summary.top_candidates[:10] if job.workflow_summary else [])
+        ],
+        "risk_tags": job.dataset_profile.risk_tags,
+        "required_json_schema": {"report_text": "string"},
+    }
+    try:
+        response = OpenAICompatibleLLMClient(settings.llm).request_json(
+            system_prompt=(
+                "You are a genomic selection report assistant. Return valid JSON only. "
+                "Use Chinese when the task context is Chinese. Do not invent metrics. "
+                "The JSON must contain report_text."
+            ),
+            user_prompt=json.dumps(payload, ensure_ascii=False),
+        )
+    except Exception:
+        return "AI 调用失败：当前报告未生成大模型摘要。"
+
+    report_text = str(response.get("report_text") or "").strip()
+    if not report_text:
+        return "AI 调用失败：当前报告未生成大模型摘要。"
+    return report_text
 
 
 def _build_role_reports(
@@ -100,13 +154,14 @@ def build_job_report(job: JobStatusResponse) -> JobReportResponse:
     recommendations = diagnostics.recommendations if diagnostics is not None else []
     recommendation_text = " | ".join(recommendations) if recommendations else "none"
 
-    report_text = (
-        f"Agent layer: interpreted trait `{job.trait_name}`, extracted fixed effects [{fixed_effects}], "
-        f"and validated dataset structure before execution (risk tags: {risk_text}).\n"
-        f"Agent recommendation: {recommendation_text}.\n"
-        f"Workflow layer: executed `{job.workflow_backend}` and produced ranked GEBV outputs from fixed GS pipeline.\n"
-        f"Top candidates preview: {top_preview}."
+    base_report_text = _base_report_text(
+        job=job,
+        fixed_effects=fixed_effects,
+        risk_text=risk_text,
+        recommendation_text=recommendation_text,
+        top_preview=top_preview,
     )
+    report_text = _ai_report_text(job, base_report_text)
 
     claim_evidence_map = build_claim_evidence_map(job)
     audit_checks = run_audit_checks(job)

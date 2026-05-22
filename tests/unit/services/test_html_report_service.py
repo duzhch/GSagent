@@ -139,3 +139,42 @@ def test_build_job_report_exposes_html_report_artifact(tmp_path) -> None:
     assert report.html_report_artifact.format == "html"
     assert report.html_report_artifact.artifact_path.endswith("reports/gs_report.html")
     assert (result_dir / "reports" / "gs_report.html").exists()
+
+
+def test_build_job_report_uses_ai_report_text_when_llm_is_configured(
+    monkeypatch, tmp_path
+) -> None:
+    result_dir = tmp_path / "result"
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_API_KEY", "secret-key")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_MODEL", "deepseek-chat")
+
+    def fake_request_json(self, system_prompt: str, user_prompt: str) -> dict:
+        assert "report_text" in user_prompt
+        return {"report_text": "AI 生成：A1001 是优先候选个体。"}
+
+    monkeypatch.setattr(
+        "animal_gs_agent.llm.client.OpenAICompatibleLLMClient.request_json",
+        fake_request_json,
+    )
+
+    report = build_job_report(_job(str(result_dir)))
+
+    assert report.report_text == "AI 生成：A1001 是优先候选个体。"
+    html = (result_dir / "reports" / "gs_report.html").read_text(encoding="utf-8")
+    assert "AI 生成：A1001 是优先候选个体。" in html
+
+
+def test_build_job_report_shows_simple_not_connected_message_when_llm_is_missing(
+    monkeypatch, tmp_path
+) -> None:
+    result_dir = tmp_path / "result"
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_API_KEY", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_MODEL", raising=False)
+
+    report = build_job_report(_job(str(result_dir)))
+
+    assert report.report_text == "AI 未接入：当前报告未调用大模型生成摘要。"
+    html = (result_dir / "reports" / "gs_report.html").read_text(encoding="utf-8")
+    assert "AI 未接入：当前报告未调用大模型生成摘要。" in html
