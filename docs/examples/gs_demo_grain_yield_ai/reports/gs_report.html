@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GS Candidate Decision Report - grain_yield</title>
+  <style>
+    :root {
+      --ink: #15202b;
+      --muted: #53606f;
+      --line: #d7dde4;
+      --paper: #f6f2ea;
+      --panel: #ffffff;
+      --accent: #1f6f68;
+      --accent-2: #c94f2d;
+      --soft: #e7f1ef;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(31,111,104,.10), transparent 34%),
+        linear-gradient(180deg, var(--paper), #ffffff 46%);
+      font-family: "Aptos", "Segoe UI", sans-serif;
+    }
+    .page {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 36px 0 56px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 24px;
+      align-items: stretch;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 26px;
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+    .summary {
+      margin-top: 18px;
+      color: var(--muted);
+      max-width: 760px;
+      font-size: 15px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    .decision-card {
+      background: var(--ink);
+      color: white;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 230px;
+    }
+    .decision-card .label {
+      color: #b7c7c4;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 800;
+    }
+    .decision-card .value {
+      margin-top: 18px;
+      font-size: 31px;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 24px 0;
+    }
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 16px;
+      min-height: 112px;
+    }
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 800;
+    }
+    .metric strong {
+      display: block;
+      margin-top: 13px;
+      font-size: 24px;
+    }
+    .section {
+      background: rgba(255,255,255,.78);
+      border: 1px solid var(--line);
+      margin-top: 18px;
+      padding: 22px;
+    }
+    .chart-shell {
+      overflow-x: auto;
+      background: var(--soft);
+      border: 1px solid #c8deda;
+    }
+    svg {
+      min-width: 820px;
+      width: 100%;
+      height: auto;
+      display: block;
+      background: linear-gradient(90deg, #f4fbf9, #ffffff);
+    }
+    .svg-title { font: 800 22px Aptos, Segoe UI, sans-serif; fill: var(--ink); }
+    .svg-label { font: 700 14px Aptos, Segoe UI, sans-serif; fill: var(--ink); }
+    .svg-score { font: 700 13px Aptos, Segoe UI, sans-serif; fill: var(--accent-2); }
+    .svg-bar { fill: var(--accent); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .audit {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .note {
+      background: #fff8ed;
+      border-left: 4px solid var(--accent-2);
+      padding: 14px 16px;
+      color: #57321f;
+      line-height: 1.55;
+    }
+    .input-box {
+      background: #f1f6f5;
+      border-left: 5px solid var(--accent);
+      padding: 16px 18px;
+      color: var(--ink);
+      line-height: 1.65;
+      font-weight: 650;
+    }
+    .plan-list, .reflection-list {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--ink);
+      line-height: 1.7;
+    }
+    .log-table {
+      margin-top: 8px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border: 1px solid #bdd5d1;
+      background: #edf7f5;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .result-block {
+      margin-top: 18px;
+    }
+    @media (max-width: 820px) {
+      .hero, .audit { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .page { width: min(100% - 20px, 1160px); padding-top: 22px; }
+      .grid { grid-template-columns: 1fr; }
+      .section, .decision-card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Genomic Selection Harness</p>
+        <h1>GS Candidate Decision Report</h1>
+        <p class="summary">grain_yield性状的GS分析中，h²=0.45，达到中高水平，预测准确度r=0.93，模型可靠。偏差slope=1.98，需调整模型参数。Top候选系WHEAT_0415（GEBV=1036.37）表现最优，建议重点利用。</p>
+      </div>
+      <aside class="decision-card">
+        <div>
+          <div class="label">Recommended candidate</div>
+          <div class="value">WHEAT_0415 / GEBV 1036.3687</div>
+        </div>
+        <div class="label">Trait: grain_yield</div>
+      </aside>
+    </section>
+
+    <section class="section">
+      <h2>User Input</h2>
+      <div class="input-box">Run genomic selection for grain_yield and return candidate individuals</div>
+    </section>
+
+    <section class="section">
+      <h2>AI Task Plan</h2>
+      <ul class="plan-list">
+        <li>Interpret task intent: rank candidates for genomic selection and return priority breeding candidates</li>
+<li>Trait: grain_yield; fixed effects considered: batch, sex</li>
+<li>Check phenotype/genotype input structure and QC risk tags: none</li>
+<li>Candidate model pool: fixed GBLUP pipeline</li>
+<li>Validation protocol: use workflow metrics and audit review for this run</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Execution Log</h2>
+      <table class="log-table">
+        <thead>
+          <tr><th>Time</th><th>Phase</th><th>Message</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>2026-05-22T10:00:00Z</td><td><span class="pill">queued</span></td><td>job accepted and queued</td></tr>
+<tr><td>2026-05-22T10:01:00Z</td><td><span class="pill">running</span></td><td>AI summary and GS workflow result parsing started</td></tr>
+<tr><td>2026-05-22T10:08:00Z</td><td><span class="pill">completed</span></td><td>AI-backed report generated successfully</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Execution Steps</h2>
+      <table>
+        <thead>
+          <tr><th>Decision ID</th><th>Agent</th><th>Action</th><th>Status</th><th>Rationale</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ai_report_summary_generated</td><td>report_agent</td><td>generate_ai_summary</td><td>success</td><td>DeepSeek generated the report summary from parsed GS metrics and top candidates</td></tr>
+<tr><td>workflow_completed_success</td><td>supervisor</td><td>finalize_completed</td><td>success</td><td>workflow outputs were parsed and candidate table was rendered</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>GS Results</h2>
+      <section class="grid" aria-label="Run summary">
+        <div class="metric"><span>Total candidates</span><strong>500</strong></div>
+        <div class="metric"><span>Pearson r</span><strong>0.9322</strong></div>
+        <div class="metric"><span>RMSE</span><strong>6012.1200</strong></div>
+        <div class="metric"><span>Risk tags</span><strong>none</strong></div>
+      </section>
+      <div class="result-block">
+        <h2>Candidate GEBV Ranking</h2>
+        <div class="chart-shell"><svg viewBox="0 0 900 410" role="img" aria-label="Candidate GEBV Ranking">
+<text x="32" y="34" class="svg-title">Candidate GEBV Ranking</text>
+<line x1="220" y1="52" x2="830" y2="52" stroke="#d7dde4" stroke-width="1"/>
+<text x="32" y="94" class="svg-label">#1 WHEAT_0415</text>
+<rect x="220" y="76" width="610" height="20" rx="4" class="svg-bar"/>
+<text x="840" y="91" class="svg-score">1036.3687</text>
+<text x="32" y="128" class="svg-label">#2 WHEAT_0009</text>
+<rect x="220" y="110" width="586" height="20" rx="4" class="svg-bar"/>
+<text x="816" y="125" class="svg-score">996.4601</text>
+<text x="32" y="162" class="svg-label">#3 WHEAT_0038</text>
+<rect x="220" y="144" width="585" height="20" rx="4" class="svg-bar"/>
+<text x="815" y="159" class="svg-score">995.1018</text>
+<text x="32" y="196" class="svg-label">#4 WHEAT_0319</text>
+<rect x="220" y="178" width="561" height="20" rx="4" class="svg-bar"/>
+<text x="791" y="193" class="svg-score">954.1022</text>
+<text x="32" y="230" class="svg-label">#5 WHEAT_0413</text>
+<rect x="220" y="212" width="521" height="20" rx="4" class="svg-bar"/>
+<text x="751" y="227" class="svg-score">886.1652</text>
+<text x="32" y="264" class="svg-label">#6 WHEAT_0339</text>
+<rect x="220" y="246" width="476" height="20" rx="4" class="svg-bar"/>
+<text x="706" y="261" class="svg-score">809.5704</text>
+<text x="32" y="298" class="svg-label">#7 WHEAT_0289</text>
+<rect x="220" y="280" width="461" height="20" rx="4" class="svg-bar"/>
+<text x="691" y="295" class="svg-score">783.7426</text>
+<text x="32" y="332" class="svg-label">#8 WHEAT_0404</text>
+<rect x="220" y="314" width="461" height="20" rx="4" class="svg-bar"/>
+<text x="691" y="329" class="svg-score">783.5853</text>
+<text x="32" y="366" class="svg-label">#9 WHEAT_0216</text>
+<rect x="220" y="348" width="450" height="20" rx="4" class="svg-bar"/>
+<text x="680" y="363" class="svg-score">764.5520</text>
+<text x="32" y="400" class="svg-label">#10 WHEAT_0228</text>
+<rect x="220" y="382" width="438" height="20" rx="4" class="svg-bar"/>
+<text x="668" y="397" class="svg-score">745.7748</text>
+</svg></div>
+      </div>
+      <div class="result-block">
+        <h2>Candidate Individuals</h2>
+        <table>
+          <thead>
+            <tr><th>Rank</th><th>Individual ID</th><th>GEBV</th><th>Decision tag</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>WHEAT_0415</td><td>1036.3687</td><td>Priority selection candidate</td></tr>
+<tr><td>2</td><td>WHEAT_0009</td><td>996.4601</td><td>Priority selection candidate</td></tr>
+<tr><td>3</td><td>WHEAT_0038</td><td>995.1018</td><td>Priority selection candidate</td></tr>
+<tr><td>4</td><td>WHEAT_0319</td><td>954.1022</td><td>Validation shortlist</td></tr>
+<tr><td>5</td><td>WHEAT_0413</td><td>886.1652</td><td>Validation shortlist</td></tr>
+<tr><td>6</td><td>WHEAT_0339</td><td>809.5704</td><td>Validation shortlist</td></tr>
+<tr><td>7</td><td>WHEAT_0289</td><td>783.7426</td><td>Validation shortlist</td></tr>
+<tr><td>8</td><td>WHEAT_0404</td><td>783.5853</td><td>Validation shortlist</td></tr>
+<tr><td>9</td><td>WHEAT_0216</td><td>764.5520</td><td>Validation shortlist</td></tr>
+<tr><td>10</td><td>WHEAT_0228</td><td>745.7748</td><td>Validation shortlist</td></tr>
+<tr><td>11</td><td>WHEAT_0499</td><td>737.3976</td><td>Monitor only</td></tr>
+<tr><td>12</td><td>WHEAT_0081</td><td>728.1100</td><td>Monitor only</td></tr>
+<tr><td>13</td><td>WHEAT_0117</td><td>717.5357</td><td>Monitor only</td></tr>
+<tr><td>14</td><td>WHEAT_0089</td><td>700.7103</td><td>Monitor only</td></tr>
+<tr><td>15</td><td>WHEAT_0113</td><td>691.3128</td><td>Monitor only</td></tr>
+<tr><td>16</td><td>WHEAT_0482</td><td>690.6317</td><td>Monitor only</td></tr>
+<tr><td>17</td><td>WHEAT_0293</td><td>688.6845</td><td>Monitor only</td></tr>
+<tr><td>18</td><td>WHEAT_0437</td><td>677.9166</td><td>Monitor only</td></tr>
+<tr><td>19</td><td>WHEAT_0086</td><td>672.2721</td><td>Monitor only</td></tr>
+<tr><td>20</td><td>WHEAT_0445</td><td>670.7172</td><td>Monitor only</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>AI Reflection</h2>
+      <ul class="reflection-list">
+        <li>Decision confidence depends on data QC, validation design, and model metrics. Current risk tags: none.</li>
+<li>Primary result: WHEAT_0415 ranked first with GEBV 1036.3687.</li>
+<li>Metric review: Pearson r=0.9322; RMSE=6012.1200. Compare these values with historical runs before deployment.</li>
+<li>Recommended next action: review top candidates with breeding constraints, population structure, and phenotype outlier diagnostics.</li>
+      </ul>
+    </section>
+
+    <section class="section audit">
+      <div class="note">
+        <strong>Agent decision context</strong><br>
+        Fixed effects considered: batch, sex. Workflow backend: offline_nextflow_gblup.
+      </div>
+      <div class="note">
+        <strong>Audit note</strong><br>
+        Review population structure, phenotype outliers, leakage risk, and business constraints before final breeding deployment.
+      </div>
+    </section>
+  </main>
+</body>
+</html>
