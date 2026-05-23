@@ -86,10 +86,40 @@ def _required_env_missing() -> list[str]:
 
 def _prompt_text(label: str, default: str | None = None) -> str:
     suffix = f" [{default}]" if default else ""
-    raw = input(f"{label}{suffix}: ").strip()
+    prompt = f"{label}{suffix}: "
+    print(prompt, end="", flush=True)
+    raw = _read_stdin_line_text().strip()
     if raw:
         return raw
     return default or ""
+
+
+def _decode_stdin_line(raw: bytes, preferred_encoding: str | None) -> str:
+    encodings = [preferred_encoding, "utf-8", "gb18030"]
+    tried: set[str] = set()
+    for encoding in encodings:
+        if not encoding:
+            continue
+        normalized = encoding.lower()
+        if normalized in tried:
+            continue
+        tried.add(normalized)
+        try:
+            return raw.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode(preferred_encoding or "utf-8", errors="replace")
+
+
+def _read_stdin_line_text() -> str:
+    buffer = getattr(sys.stdin, "buffer", None)
+    if buffer is not None:
+        try:
+            raw = buffer.readline()
+            return _decode_stdin_line(raw, getattr(sys.stdin, "encoding", None))
+        except OSError:
+            return input("")
+    return sys.stdin.readline()
 
 
 def _prompt_secret(label: str) -> str:

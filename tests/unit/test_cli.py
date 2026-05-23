@@ -1,4 +1,5 @@
 from pathlib import Path
+import io
 import os
 from types import SimpleNamespace
 
@@ -6,6 +7,7 @@ import pytest
 
 from animal_gs_agent.cli import (
     _prepare_runtime,
+    _prompt_text,
     _required_command_missing,
     _resolve_workdir,
     build_parser,
@@ -65,6 +67,13 @@ def test_required_command_missing_accepts_python3_fallback(monkeypatch) -> None:
     )
 
     assert _required_command_missing() == []
+
+
+def test_prompt_text_accepts_gb18030_chinese_when_terminal_claims_utf8(monkeypatch) -> None:
+    raw_stdin = io.BytesIO("你是谁\n".encode("gb18030"))
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(raw_stdin, encoding="utf-8"))
+
+    assert _prompt_text("你") == "你是谁"
 
 
 def test_configure_creates_env_with_interactive_inputs(
