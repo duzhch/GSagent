@@ -88,10 +88,21 @@ def _prompt_text(label: str, default: str | None = None) -> str:
     suffix = f" [{default}]" if default else ""
     prompt = f"{label}{suffix}: "
     print(prompt, end="", flush=True)
-    raw = _read_stdin_line_text().strip()
+    raw = _normalize_terminal_line(_read_stdin_line_text()).strip()
     if raw:
         return raw
     return default or ""
+
+
+def _normalize_terminal_line(text: str) -> str:
+    output: list[str] = []
+    for char in text:
+        if char in {"\b", "\x7f"}:
+            if output:
+                output.pop()
+            continue
+        output.append(char)
+    return "".join(output)
 
 
 def _decode_stdin_line(raw: bytes, preferred_encoding: str | None) -> str:

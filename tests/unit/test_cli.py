@@ -76,6 +76,20 @@ def test_prompt_text_accepts_gb18030_chinese_when_terminal_claims_utf8(monkeypat
     assert _prompt_text("你") == "你是谁"
 
 
+def test_prompt_text_applies_ctrl_h_backspace(monkeypatch) -> None:
+    raw_stdin = io.BytesIO("你是x\b谁\n".encode("utf-8"))
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(raw_stdin, encoding="utf-8"))
+
+    assert _prompt_text("你") == "你是谁"
+
+
+def test_prompt_text_applies_delete_backspace(monkeypatch) -> None:
+    raw_stdin = io.BytesIO("你是x\x7f谁\n".encode("utf-8"))
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(raw_stdin, encoding="utf-8"))
+
+    assert _prompt_text("你") == "你是谁"
+
+
 def test_configure_creates_env_with_interactive_inputs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
