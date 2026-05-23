@@ -9,6 +9,7 @@ from pathlib import Path
 import secrets
 import shutil
 import sys
+import termios
 import time
 
 import uvicorn
@@ -88,10 +89,41 @@ def _prompt_text(label: str, default: str | None = None) -> str:
     suffix = f" [{default}]" if default else ""
     prompt = f"{label}{suffix}: "
     print(prompt, end="", flush=True)
-    raw = _normalize_terminal_line(_read_stdin_line_text()).strip()
+    terminal_state = _set_tty_erase_to_ctrl_h()
+    try:
+        raw = _normalize_terminal_line(_read_stdin_line_text()).strip()
+    finally:
+        _restore_tty_state(terminal_state)
     if raw:
         return raw
     return default or ""
+
+
+def _set_tty_erase_to_ctrl_h() -> tuple[int, list] | None:
+    is_tty = getattr(sys.stdin, "isatty", lambda: False)
+    if not is_tty():
+        return None
+    try:
+        fd = sys.stdin.fileno()
+        old_attrs = termios.tcgetattr(fd)
+        new_attrs = list(old_attrs)
+        new_attrs[6] = list(old_attrs[6])
+        new_attrs[6][termios.VERASE] = b"\x08"
+        new_attrs[3] = new_attrs[3] | termios.ECHOE
+        termios.tcsetattr(fd, termios.TCSANOW, new_attrs)
+        return fd, old_attrs
+    except (OSError, termios.error, ValueError):
+        return None
+
+
+def _restore_tty_state(state: tuple[int, list] | None) -> None:
+    if state is None:
+        return
+    fd, old_attrs = state
+    try:
+        termios.tcsetattr(fd, termios.TCSANOW, old_attrs)
+    except (OSError, termios.error, ValueError):
+        return
 
 
 def _normalize_terminal_line(text: str) -> str:

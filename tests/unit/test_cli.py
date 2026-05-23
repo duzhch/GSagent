@@ -90,6 +90,39 @@ def test_prompt_text_applies_delete_backspace(monkeypatch) -> None:
     assert _prompt_text("你") == "你是谁"
 
 
+def test_prompt_text_temporarily_sets_tty_erase_to_ctrl_h(monkeypatch) -> None:
+    class FakeStdin:
+        encoding = "utf-8"
+        buffer = io.BytesIO(b"hello\n")
+
+        def fileno(self) -> int:
+            return 123
+
+        def isatty(self) -> bool:
+            return True
+
+    old_cc = [b"\x00"] * 32
+    old_cc[1] = b"\x7f"
+    old_attrs = [0, 0, 0, 0, 0, 0, old_cc]
+    calls = []
+
+    def fake_tcsetattr(fd, when, attrs):
+        calls.append((fd, when, attrs))
+
+    monkeypatch.setattr("sys.stdin", FakeStdin())
+    monkeypatch.setattr("animal_gs_agent.cli.termios.VERASE", 1)
+    monkeypatch.setattr("animal_gs_agent.cli.termios.TCSANOW", 0)
+    monkeypatch.setattr("animal_gs_agent.cli.termios.ECHOE", 16)
+    monkeypatch.setattr("animal_gs_agent.cli.termios.tcgetattr", lambda fd: old_attrs)
+    monkeypatch.setattr("animal_gs_agent.cli.termios.tcsetattr", fake_tcsetattr)
+
+    assert _prompt_text("你") == "hello"
+    assert calls[0][0] == 123
+    assert calls[0][2][6][1] == b"\x08"
+    assert calls[0][2][3] & 16
+    assert calls[1] == (123, 0, old_attrs)
+
+
 def test_configure_creates_env_with_interactive_inputs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
