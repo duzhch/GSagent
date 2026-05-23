@@ -183,9 +183,10 @@ def _string_field(payload: dict, key: str) -> str:
 def _route_chat_message(message: str, llm_client: OpenAICompatibleLLMClient) -> dict[str, str]:
     system_prompt = (
         "你是 GS Agent 的对话路由器。必须只返回严格 JSON 对象，不要返回 Markdown。"
-        "intent 只能是 chat、gs_task、exit。"
+        "intent 只能是 chat、gs_task、list_files、exit。"
         "chat 表示普通对话、能力咨询、解释系统身份或非分析问题，必须给出 reply。"
         "gs_task 表示用户明确要启动基因组选择/GS 分析，尽量提取 trait_name、phenotype_path、genotype_path。"
+        "list_files 表示用户要求查看当前目录、列出文件、检查目录内容；这类请求不是 gs_task。"
         "exit 表示用户明确要求退出。"
         "返回字段必须包含 intent、reply、trait_name、phenotype_path、genotype_path。"
         "如果字段未知，使用空字符串。"
@@ -194,7 +195,7 @@ def _route_chat_message(message: str, llm_client: OpenAICompatibleLLMClient) -> 
     if not isinstance(payload, dict):
         raise ValueError("router response is not a JSON object")
     intent = _string_field(payload, "intent").lower()
-    if intent not in {"chat", "gs_task", "exit"}:
+    if intent not in {"chat", "gs_task", "list_files", "exit"}:
         raise ValueError(f"invalid router intent: {intent or '<empty>'}")
     return {
         "intent": intent,
@@ -203,6 +204,23 @@ def _route_chat_message(message: str, llm_client: OpenAICompatibleLLMClient) -> 
         "phenotype_path": _string_field(payload, "phenotype_path"),
         "genotype_path": _string_field(payload, "genotype_path"),
     }
+
+
+def _print_current_directory_listing(workdir: Path) -> None:
+    print(f"[gsagent] 当前目录: {workdir}")
+    try:
+        entries = sorted(workdir.iterdir(), key=lambda item: (not item.is_dir(), item.name.lower()))
+    except OSError as exc:
+        print(f"[gsagent] 读取目录失败：{exc}")
+        return
+    if not entries:
+        print("  <empty>")
+        return
+    for entry in entries[:100]:
+        suffix = "/" if entry.is_dir() else ""
+        print(f"  {entry.name}{suffix}")
+    if len(entries) > 100:
+        print(f"  ... 还有 {len(entries) - 100} 项未显示")
 
 
 def _read_env_kv(env_path: Path) -> dict[str, str]:
@@ -395,7 +413,7 @@ def _print_report_summary(report) -> None:
 
 
 def cmd_chat(args: argparse.Namespace) -> int:
-    _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
+    workdir = _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
     settings = get_settings()
     if not _has_llm_settings(settings.llm):
         print("[gsagent] AI 未接入：无法进行动态对话判断。")
@@ -420,6 +438,12 @@ def cmd_chat(args: argparse.Namespace) -> int:
         if route["intent"] == "exit":
             print("[gsagent] 已退出。")
             return 0
+        if route["intent"] == "list_files":
+            _print_current_directory_listing(workdir)
+            if args.message:
+                return 0
+            message = _prompt_text("你")
+            continue
         if route["intent"] == "gs_task":
             break
 

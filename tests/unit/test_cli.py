@@ -275,6 +275,52 @@ def test_interactive_chat_routes_exit_through_ai_after_small_talk(
     assert "已退出" in output
 
 
+def test_chat_lists_current_directory_when_ai_routes_tool(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    (tmp_path / "pheno.csv").write_text("animal_id,trait\nA1,1.0\n", encoding="utf-8")
+    (tmp_path / "inputs").mkdir()
+    calls = {"create_job": 0}
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_API_KEY", "secret-key")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_MODEL", "deepseek-chat")
+    monkeypatch.setattr(
+        "animal_gs_agent.cli.OpenAICompatibleLLMClient.request_json",
+        lambda self, system_prompt, user_prompt: {
+            "intent": "list_files",
+            "reply": "",
+            "trait_name": "",
+            "phenotype_path": "",
+            "genotype_path": "",
+        },
+    )
+    monkeypatch.setattr(
+        "animal_gs_agent.cli.create_job",
+        lambda *args, **kwargs: calls.__setitem__("create_job", calls["create_job"] + 1),
+    )
+
+    args = SimpleNamespace(
+        workdir=str(tmp_path),
+        env_file=".env",
+        message="看下我当前目录下有什么文件",
+        trait_name=None,
+        phenotype_path=None,
+        genotype_path=None,
+    )
+
+    exit_code = cmd_chat(args)
+
+    assert exit_code == 0
+    assert calls["create_job"] == 0
+    output = capsys.readouterr().out
+    assert "[gsagent] 当前目录:" in output
+    assert "pheno.csv" in output
+    assert "inputs/" in output
+    assert "trait_name / 性状" not in output
+
+
 def test_chat_requires_ai_for_dynamic_routing(
     tmp_path: Path,
     monkeypatch,

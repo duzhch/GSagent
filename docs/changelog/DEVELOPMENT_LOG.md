@@ -8,6 +8,7 @@
 - Removed keyword intent fallback and local small-talk fallback from the chat command.
 - Added tests for AI small-talk routing, AI GS task routing, and missing-AI hard stop.
 - Added implementation plan: `docs/superpowers/plans/2026-05-23-ai-only-chat-routing.md`.
+- Added an AI-routed `list_files` tool intent so users can ask the awakened CLI to inspect the current workdir without triggering GS task field collection.
 
 ## 2026-05-06
 
