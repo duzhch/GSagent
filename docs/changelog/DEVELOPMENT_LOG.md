@@ -1,5 +1,14 @@
 # Development Log
 
+## 2026-05-23
+
+### Session 1
+
+- Changed `gsagent chat` to strict AI-only turn routing.
+- Removed keyword intent fallback and local small-talk fallback from the chat command.
+- Added tests for AI small-talk routing, AI GS task routing, and missing-AI hard stop.
+- Added implementation plan: `docs/superpowers/plans/2026-05-23-ai-only-chat-routing.md`.
+
 ## 2026-05-06
 
 ### Session 1

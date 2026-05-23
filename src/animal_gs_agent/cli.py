@@ -6,7 +6,6 @@ import argparse
 from getpass import getpass
 import os
 from pathlib import Path
-import re
 import secrets
 import shutil
 import sys
@@ -97,74 +96,40 @@ def _prompt_secret(label: str) -> str:
     return getpass(f"{label}: ").strip()
 
 
-def _extract_value(patterns: list[str], text: str) -> str | None:
-    for pattern in patterns:
-        match = re.search(pattern, text, flags=re.IGNORECASE)
-        if match:
-            value = match.group(1).strip().strip("，,。;；")
-            if value:
-                return value
-    return None
+def _has_llm_settings(settings: LLMSettings) -> bool:
+    return bool(settings.base_url and settings.api_key and settings.model)
 
 
-def _extract_task_fields(message: str) -> dict[str, str | None]:
-    trait_name = _extract_value(
-        [
-            r"(?:trait_name|trait|性状)\s*[:=]\s*([^\s,，;；]+)",
-            r"对\s*([A-Za-z0-9_.-]+)\s*(?:做|进行).{0,8}(?:GS|基因组选择)",
-        ],
-        message,
+def _string_field(payload: dict, key: str) -> str:
+    value = payload.get(key, "")
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _route_chat_message(message: str, llm_client: OpenAICompatibleLLMClient) -> dict[str, str]:
+    system_prompt = (
+        "你是 GS Agent 的对话路由器。必须只返回严格 JSON 对象，不要返回 Markdown。"
+        "intent 只能是 chat、gs_task、exit。"
+        "chat 表示普通对话、能力咨询、解释系统身份或非分析问题，必须给出 reply。"
+        "gs_task 表示用户明确要启动基因组选择/GS 分析，尽量提取 trait_name、phenotype_path、genotype_path。"
+        "exit 表示用户明确要求退出。"
+        "返回字段必须包含 intent、reply、trait_name、phenotype_path、genotype_path。"
+        "如果字段未知，使用空字符串。"
     )
-    phenotype_path = _extract_value(
-        [
-            r"(?:phenotype_path|phenotype|pheno)\s*[:=]\s*([^\s,，;；]+)",
-            r"(?:表型文件|表型数据|表型)\s*(?:是|为|在|:|：)\s*([^\s,，;；]+)",
-        ],
-        message,
-    )
-    genotype_path = _extract_value(
-        [
-            r"(?:genotype_path|genotype|geno)\s*[:=]\s*([^\s,，;；]+)",
-            r"(?:基因型文件|基因型数据|基因型)\s*(?:是|为|在|:|：)\s*([^\s,，;；]+)",
-        ],
-        message,
-    )
+    payload = llm_client.request_json(system_prompt=system_prompt, user_prompt=message)
+    if not isinstance(payload, dict):
+        raise ValueError("router response is not a JSON object")
+    intent = _string_field(payload, "intent").lower()
+    if intent not in {"chat", "gs_task", "exit"}:
+        raise ValueError(f"invalid router intent: {intent or '<empty>'}")
     return {
-        "trait_name": trait_name,
-        "phenotype_path": phenotype_path,
-        "genotype_path": genotype_path,
+        "intent": intent,
+        "reply": _string_field(payload, "reply"),
+        "trait_name": _string_field(payload, "trait_name"),
+        "phenotype_path": _string_field(payload, "phenotype_path"),
+        "genotype_path": _string_field(payload, "genotype_path"),
     }
-
-
-def _is_analysis_intent(message: str) -> bool:
-    lowered = message.lower()
-    intent_tokens = [
-        "gs",
-        "gblup",
-        "gebv",
-        "genomic selection",
-        "基因组选择",
-        "基因组选",
-        "候选个体",
-        "育种值",
-        "基因型",
-        "表型",
-        "phenotype",
-        "genotype",
-        "trait",
-    ]
-    return any(token in lowered for token in intent_tokens)
-
-
-def _is_exit_message(message: str) -> bool:
-    return message.strip().lower() in {"退出", "exit", "quit", "q", "bye"}
-
-
-def _small_talk_reply(message: str) -> str:
-    lowered = message.strip().lower()
-    if lowered in {"你好", "hi", "hello", "hey"}:
-        return "你好，我在。请描述 GS 任务，并给出性状、表型文件、基因型文件。"
-    return "我在。请描述 GS/基因组选择任务；闲聊不会启动分析。"
 
 
 def _read_env_kv(env_path: Path) -> dict[str, str]:
@@ -358,43 +323,51 @@ def _print_report_summary(report) -> None:
 
 def cmd_chat(args: argparse.Namespace) -> int:
     _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
+    settings = get_settings()
+    if not _has_llm_settings(settings.llm):
+        print("[gsagent] AI 未接入：无法进行动态对话判断。")
+        return 2
+
+    llm_client = OpenAICompatibleLLMClient(settings.llm)
     message = (args.message or "").strip()
     if not message:
-        print("[gsagent] 唤醒成功。直接描述 GS 任务，包含性状、表型文件、基因型文件。")
+        print("[gsagent] 唤醒成功。已接入 AI，请直接描述问题或 GS 任务。")
         message = _prompt_text("你")
     if not message:
         print("[gsagent] 未收到任务。")
         return 2
-    while message and not _is_analysis_intent(message):
-        print(f"[gsagent] {_small_talk_reply(message)}")
+
+    while True:
+        try:
+            route = _route_chat_message(message, llm_client)
+        except Exception as exc:
+            print(f"[gsagent] AI 调用失败：无法完成动态对话判断。{exc}")
+            return 1
+
+        if route["intent"] == "exit":
+            print("[gsagent] 已退出。")
+            return 0
+        if route["intent"] == "gs_task":
+            break
+
+        reply = route["reply"] or "我在。你可以继续描述 GS 任务或提出相关问题。"
+        print(f"[gsagent] {reply}")
         if args.message:
             return 0
         message = _prompt_text("你")
-        if _is_exit_message(message):
-            print("[gsagent] 已退出。")
-            return 0
-    if not message:
-        print("[gsagent] 未收到任务。")
-        return 2
 
-    fields = _extract_task_fields(message)
-    trait_name = args.trait_name or fields["trait_name"] or _prompt_text("trait_name / 性状")
-    phenotype_path = args.phenotype_path or fields["phenotype_path"] or _prompt_text("phenotype_path / 表型文件")
-    genotype_path = args.genotype_path or fields["genotype_path"] or _prompt_text("genotype_path / 基因型文件")
+    trait_name = args.trait_name or route["trait_name"] or _prompt_text("trait_name / 性状")
+    phenotype_path = args.phenotype_path or route["phenotype_path"] or _prompt_text("phenotype_path / 表型文件")
+    genotype_path = args.genotype_path or route["genotype_path"] or _prompt_text("genotype_path / 基因型文件")
     if not trait_name or not phenotype_path or not genotype_path:
         print("[gsagent] 缺少 trait_name / phenotype_path / genotype_path，无法启动分析。")
-        return 2
-
-    settings = get_settings()
-    if not settings.llm.base_url or not settings.llm.api_key or not settings.llm.model:
-        print("[gsagent] AI 未接入：无法解析自然语言任务。")
         return 2
 
     print("[gsagent] 唤醒成功，开始解析任务...")
     try:
         task_understanding = understand_task(
             message,
-            llm_client=OpenAICompatibleLLMClient(settings.llm),
+            llm_client=llm_client,
         )
         payload = JobSubmissionRequest(
             user_message=message,

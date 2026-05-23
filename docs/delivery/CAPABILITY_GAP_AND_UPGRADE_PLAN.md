@@ -1,6 +1,6 @@
 # Capability Gap and Upgrade Plan
 
-Last updated: 2026-05-08
+Last updated: 2026-05-23
 
 ## 1. Purpose
 
@@ -78,6 +78,23 @@ Reference:
 - `src/animal_gs_agent/services/job_service.py`
 - `tests/risk/p1_approval_gate.md`
 - `tests/integration/p1_override_log.md`
+
+## 2.5 AI-Only Awakened CLI Interaction (Implemented)
+
+1. `gsagent chat` is now a strict AI-routed interaction entrypoint.
+2. Every user turn is sent to the configured OpenAI-compatible LLM router before the CLI decides whether it is ordinary chat, a GS task, or an exit request.
+3. Keyword intent detection and local small-talk fallback are not allowed in the chat command.
+4. If LLM settings are absent, the chat command stops before task collection or job creation.
+5. GS task fields come from explicit CLI overrides or the AI router output; regex extraction is not used as a chat fallback.
+
+Why this matters:
+1. Preserves the product positioning as an agent rather than a workflow wrapper with static command parsing.
+2. Makes model involvement visible at the interaction layer, not only during report generation.
+3. Prevents users from getting misleading local responses when AI is not actually connected.
+
+Reference:
+- `src/animal_gs_agent/cli.py`
+- `tests/unit/test_cli.py`
 
 ## 3. New Capabilities To Build (By Priority)
 
