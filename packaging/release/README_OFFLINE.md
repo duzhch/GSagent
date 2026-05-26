@@ -21,11 +21,9 @@ This bundle is designed for zero-download startup on a new Linux server.
 
 Default API URL is `http://127.0.0.1:8000`.
 
-## Optional LLM provider
+## LLM provider is required
 
-No LLM key is required for baseline run. The service falls back to local heuristic task parsing when no LLM config is present.
-
-To enable model-backed parsing, create `.env` from `.env.example` and fill:
+Current GS Agent task submission and `gsagent chat` use strict model-backed parsing. Configure `.env` from `.env.example` and fill:
 
 - `ANIMAL_GS_AGENT_LLM_BASE_URL`
 - `ANIMAL_GS_AGENT_LLM_API_KEY`

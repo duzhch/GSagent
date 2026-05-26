@@ -145,6 +145,8 @@ conda activate gsagent_native
 
 ## 十、相关文档
 
+如果你是第一次使用真实数据，优先阅读：`docs/delivery/BEGINNER_REAL_DATA_TUTORIAL.md`。
+
 - 运行时打包：`packaging/runtime/README.md`
 - 离线打包：`packaging/release/README_OFFLINE.md`
 - Singularity/Apptainer：`packaging/singularity/README.md`

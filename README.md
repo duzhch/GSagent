@@ -83,6 +83,7 @@ For clusters without Docker privileges, use the native delivery bundle:
 Runbooks:
 
 - `docs/delivery/REAL_DATA_RUNBOOK.md`
+- `docs/delivery/BEGINNER_REAL_DATA_TUTORIAL.md`
 - `docs/delivery/DEMO_10MIN_SCRIPT.md`
 - `docs/delivery/MVP_ACCEPTANCE_CHECKLIST.md`
 

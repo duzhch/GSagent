@@ -124,7 +124,7 @@ cp -f "${ROOT_DIR}/packaging/release/templates/"*.sh "${PKG_ROOT}/"
 chmod +x "${PKG_ROOT}/"*.sh
 
 cat > "${PKG_ROOT}/.env.example" <<EOF
-# Optional LLM provider. Leave empty to use local heuristic parsing.
+# LLM provider is required for strict model-backed parsing.
 ANIMAL_GS_AGENT_LLM_BASE_URL=
 ANIMAL_GS_AGENT_LLM_API_KEY=
 ANIMAL_GS_AGENT_LLM_MODEL=
