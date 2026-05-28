@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GS Agent Interface Visualization</title>
+    <style>
+        :root {
+            --primary-green: #2e7d32;
+            --border-orange: #ef6c00;
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --code-font: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: white;
+            color: var(--text-color);
+            margin: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: baseline;
+        }
+
+        .header h1 {
+            color: #d32f2f;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header h2 {
+            color: #d32f2f;
+            margin: 0;
+            font-size: 20px;
+            font-weight: normal;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 4fr 6fr;
+            gap: 20px;
+        }
+
+        .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .box {
+            border: 2px dashed var(--border-orange);
+            border-radius: 15px;
+            padding: 15px;
+            background: #fff;
+            position: relative;
+        }
+
+        .box-title {
+            color: #000;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .section-header {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #000;
+        }
+
+        .user-input-content {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .user-input-content strong {
+            color: var(--primary-green);
+        }
+
+        .plan-content {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .plan-step {
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            font-family: var(--code-font);
+            font-size: 12px;
+            background-color: #fff;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .comment { color: #888; }
+        .command { color: #000; }
+        .string { color: #a31515; }
+        .keyword { color: #0000ff; }
+
+        .log-output {
+            color: #666;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .success-badge {
+            text-align: center;
+            color: var(--primary-green);
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .success-badge::before {
+            content: "✓";
+            display: inline-block;
+            border: 2px solid var(--primary-green);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--code-font);
+            font-size: 12px;
+        }
+
+        .results-table th {
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+            padding: 5px;
+        }
+
+        .results-table td {
+            padding: 5px;
+        }
+
+        .arrow-down {
+            text-align: center;
+            color: var(--border-orange);
+            font-size: 20px;
+            margin: -15px 0;
+            z-index: 1;
+        }
+
+        @media (max-width: 900px) {
+            body { padding: 0 14px; }
+            .main-grid { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>GS Agent Analysis</h1>
+        <h2>Case: Genomic Selection for Backfat Thickness in Animal Breeding Population</h2>
+    </div>
+
+    <div class="main-grid">
+        <div class="left-column">
+            <div>
+                <div class="section-header">User's Inputs</div>
+                <div class="box">
+                    <div class="user-input-content">
+                        <strong>Data and Description</strong><br>
+                        • Genotype Data: <code>data/pig5/2548bir.bed</code> (Format: plink-bed)<br>
+                        • Phenotype Data: <code>data/pig5/BF_phenotype.csv</code> (Trait: Backfat Thickness)<br>
+                        • Population: <em>Large White pig genomic selection population</em><br>
+                        • Workflow Backend: native_nextflow_gblup<br>
+                        <br>
+                        <strong>Goal</strong><br>
+                        Run genomic selection for Backfat Thickness in a Large White pig population, estimate GEBV with GBLUP, and return candidate individuals for breeder review.<br>
+                        <br>
+                        Perform Genomic Selection (GS) to estimate breeding values and identify top candidate individuals using the GS Agent pipeline.
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-header">Generated Codes and Code Execution by GS Agent</div>
+                
+                <div class="box">
+                    <div class="box-title" style="color:var(--border-orange)"># Step 1: Data Contract and Quality Control</div>
+                    <div class="code-block">
+<span class="keyword">from</span> animal_gs_agent.services.dataset_profile_service <span class="keyword">import</span> build_dataset_profile
+<span class="keyword">from</span> animal_gs_agent.schemas.jobs <span class="keyword">import</span> JobSubmissionRequest
+
+<span class="comment"># Validate phenotype/genotype paths and trait column</span>
+request = JobSubmissionRequest(
+    user_message=<span class="string">"Run genomic selection for Backfat Thickness in a Large White pig population, estimate GEBV with GBLUP, and return candidate individuals for breeder review."</span>,
+    phenotype_path=<span class="string">"data/pig5/BF_phenotype.csv"</span>,
+    genotype_path=<span class="string">"data/pig5/2548bir.bed"</span>,
+    trait_name=<span class="string">"Backfat Thickness"</span>
+)
+dataset_profile = build_dataset_profile(request)
+                    </div>
+                    <div class="log-output">
+[Log]<br>
+Detected genotype format: plink-bed<br>
+Detected phenotype format: csv<br>
+Trait column present: True<br>
+Risk tags: low_outlier_ratio, fixed_effects_detected
+                    </div>
+                    <div class="success-badge">Success</div>
+                </div>
+
+                <div class="arrow-down">↓</div>
+
+                <div class="box">
+                    <div class="box-title" style="color:var(--border-orange)"># Step 2: Model Planning and GBLUP Workflow</div>
+                    <div class="code-block">
+<span class="keyword">from</span> animal_gs_agent.services.workflow_service <span class="keyword">import</span> execute_fixed_workflow
+
+<span class="comment"># Run fixed GS workflow with GBLUP-style candidate ranking</span>
+job.workflow_result_dir = <span class="string">"docs/examples/gs_autogs_style"</span>
+workflow_result = execute_fixed_workflow(job)
+                    </div>
+                    <div class="log-output">
+[Log]<br>
+Backend: native_nextflow_gblup<br>
+Pearson r: 0.7120<br>
+RMSE: 0.1840<br>
+Source files: gblup/gebv_rankings.csv, gblup/model_summary.txt
+                    </div>
+                    <div class="success-badge">Success</div>
+                </div>
+
+                <div class="arrow-down">↓</div>
+
+                <div class="box">
+                    <div class="box-title" style="color:var(--border-orange)"># Step 3: Candidate Ranking and Report Export</div>
+                    <div class="code-block">
+<span class="keyword">from</span> animal_gs_agent.services.report_service <span class="keyword">import</span> build_job_report
+
+<span class="comment"># Generate candidate decision report and AI interpretation</span>
+report = build_job_report(job)
+
+top_candidate = report.top_candidates[0]
+html_report = report.html_report_artifact
+                    </div>
+                    <div class="log-output">
+[Log]<br>
+Total candidates: 2548<br>
+Top candidate: LW-2031 / GEBV 1.4821<br>
+HTML report: reports/gs_report.html<br>
+Candidate table exported for breeding decision review.
+                    </div>
+                    <div class="success-badge">Success</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div>
+                <div class="section-header">Generated Plans by GS Agent</div>
+                <div class="box">
+                    <div class="plan-content">
+                        <div class="plan-step">
+                            <strong>Plan 1: Data Quality Control</strong><br>
+                            First, I will inspect phenotype and genotype inputs, verify that the target trait <code>Backfat Thickness</code> exists in the phenotype table, and check whether blocking validation flags or QC risk tags are present.
+                        </div>
+                        <div class="plan-step">
+                            <strong>Plan 2: Genomic Prediction Model</strong><br>
+                            Next, I will use the fixed GS workflow to estimate genomic breeding values. The current model path is <code>GBLUP</code>-oriented, with fixed effects considered as: <code>sex, batch, farm</code>.
+                        </div>
+                        <div class="plan-step">
+                            <strong>Plan 3: Candidate Selection</strong><br>
+                            Finally, I will rank individuals by GEBV, summarize model metrics, and generate an AI-assisted interpretation for breeding personnel to review before deployment.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-header">Processed Results by GS Agent</div>
+                <div class="box">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Individual_ID</th>
+                                <th>GEBV</th>
+                                <th>Decision Tag</th>
+                                <th>Trait</th>
+                                <th>Model</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>1</td><td>LW-2031</td><td>1.4821</td><td>Priority selection candidate</td><td>Backfat Thickness</td><td>GBLUP</td><td style="color:red">***</td></tr>
+<tr><td>2</td><td>LW-1178</td><td>1.3914</td><td>Priority selection candidate</td><td>Backfat Thickness</td><td>GBLUP</td><td style="color:red">***</td></tr>
+<tr><td>3</td><td>LW-0442</td><td>1.3379</td><td>Priority selection candidate</td><td>Backfat Thickness</td><td>GBLUP</td><td style="color:red">***</td></tr>
+<tr><td>4</td><td>LW-2205</td><td>1.1018</td><td>Validation shortlist</td><td>Backfat Thickness</td><td>GBLUP</td><td style="color:orange">*</td></tr>
+<tr><td>5</td><td>LW-0186</td><td>0.9842</td><td>Validation shortlist</td><td>Backfat Thickness</td><td>GBLUP</td><td style="color:orange">*</td></tr>
+<tr><td>6</td><td>LW-3017</td><td>0.9135</td><td>Validation shortlist</td><td>Backfat Thickness</td><td>GBLUP</td><td style="color:orange">*</td></tr>
+<tr><td>7</td><td>LW-1604</td><td>0.8774</td><td>Validation shortlist</td><td>Backfat Thickness</td><td>GBLUP</td><td style="color:orange">*</td></tr>
+<tr><td>8</td><td>LW-2668</td><td>0.8029</td><td>Validation shortlist</td><td>Backfat Thickness</td><td>GBLUP</td><td style="color:orange">*</td></tr>
+<tr><td>...</td><td>...</td><td>...</td><td>...</td><td>Backfat Thickness</td><td>...</td><td></td></tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <div style="font-weight: bold; margin-bottom: 5px;">GEBV Ranking Preview</div>
+                        <div style="height: 100px; border-bottom: 2px solid #333; display: flex; align-items: flex-end; gap: 2px; padding-bottom: 2px;"><div title="#1 LW-2031 GEBV=1.4821" style="width: 8px; height: 88px; background: red;"></div>
+<div title="#2 LW-1178 GEBV=1.3914" style="width: 8px; height: 82px; background: red;"></div>
+<div title="#3 LW-0442 GEBV=1.3379" style="width: 8px; height: 79px; background: red;"></div>
+<div title="#4 LW-2205 GEBV=1.1018" style="width: 8px; height: 65px; background: orange;"></div>
+<div title="#5 LW-0186 GEBV=0.9842" style="width: 8px; height: 58px; background: orange;"></div>
+<div title="#6 LW-3017 GEBV=0.9135" style="width: 8px; height: 54px; background: orange;"></div>
+<div title="#7 LW-1604 GEBV=0.8774" style="width: 8px; height: 52px; background: orange;"></div>
+<div title="#8 LW-2668 GEBV=0.8029" style="width: 8px; height: 47px; background: orange;"></div>
+<div title="#9 LW-1099 GEBV=0.7451" style="width: 8px; height: 44px; background: orange;"></div>
+<div style="flex-grow: 1; text-align: center; align-self: center; color: #666; font-size: 12px;">(Candidate GEBV Ranking)</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-header">Agent Feedback & Interpretation</div>
+                <div class="box">
+                    <div class="plan-content">
+                         <strong>Interpretation of Results:</strong><br>
+                         <p>GS Agent completed the genomic selection task for Backfat Thickness. Top candidates show high positive GEBV and should be prioritized for breeder review. The final decision should still combine model metrics, phenotype QC, and practical breeding constraints.</p>
+                         <p>The GS Agent completed a candidate-ranking task for <em>Backfat Thickness</em>. The leading recommendation is <strong>LW-2031 / GEBV 1.4821</strong>. Model review metrics are Pearson r=0.7120 and RMSE=0.1840; these should be compared against historical breeding records before final selection.</p>
+                         
+                         <strong>Recommendations:</strong><br>
+                         <ul style="margin: 5px 0 0 20px; padding: 0;">
+                             <li>Prioritize the top-ranked candidates for breeder review and downstream validation.</li>
+                             <li>Check population structure, phenotype outliers, and operational constraints before deployment.</li>
+                             <li>Record accepted and rejected candidates as bad cases or validated cases for future agent memory.</li>
+                         </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

@@ -103,31 +103,30 @@ def test_export_gs_html_report_writes_standalone_candidate_report(tmp_path) -> N
     assert artifact.artifact_path.endswith("reports/gs_report.html")
 
     html = (result_dir / "reports" / "gs_report.html").read_text(encoding="utf-8")
-    assert "<!doctype html>" in html
-    assert "GS Candidate Decision Report" in html
-    assert "Candidate GEBV Ranking" in html
-    assert "<svg" in html
+    assert "<!DOCTYPE html>" in html
+    assert "GS Agent Analysis" in html
+    assert "Case: Genomic Selection for daily_gain" in html
+    assert "AutoGS" not in html
     assert "A1001" in html
     assert "A1099" in html
     assert "Priority selection candidate" in html
-    assert "User Input" in html
-    assert "AI Task Plan" in html
-    assert "Execution Log" in html
-    assert "Execution Steps" in html
-    assert "GS Results" in html
-    assert "AI Reflection" in html
+    assert "User's Inputs" in html
+    assert "Generated Codes and Code Execution by GS Agent" in html
+    assert "Generated Plans by GS Agent" in html
+    assert "Processed Results by GS Agent" in html
+    assert "Agent Feedback & Interpretation" in html
     assert "Run genomic selection for daily_gain and return candidate individuals" in html
-    assert "workflow completed" in html
-    assert "workflow_completed_success" in html
-    assert "report-layout" in html
-    assert "01 用户输入 / User Input" in html
-    assert "02 AI 任务规划 / AI Task Plan" in html
-    assert "03 执行日志 / Execution Log" in html
-    assert "04 执行步骤 / Execution Steps" in html
-    assert "05 GS 结果 / GS Results" in html
-    assert "06 AI 反思 / AI Reflection" in html
-    assert "Candidate Recommendation" in html
-    assert "Model & Data Snapshot" in html
+    assert "workflow completed" not in html
+    assert "workflow_completed_success" not in html
+    assert "main-grid" in html
+    assert "left-column" in html
+    assert "right-column" in html
+    assert "border: 2px dashed var(--border-orange)" in html
+    assert "# Step 1: Data Contract and Quality Control" in html
+    assert "# Step 2: Model Planning and GBLUP Workflow" in html
+    assert "# Step 3: Candidate Ranking and Report Export" in html
+    assert "GEBV Ranking Preview" in html
+    assert "GBLUP" in html
 
 
 def test_build_job_report_exposes_html_report_artifact(tmp_path) -> None:
