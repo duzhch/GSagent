@@ -110,33 +110,32 @@ def render_autogs_terminal_html() -> str:
         }}
         .screen {{
             box-sizing: border-box;
-            width: 1280px;
-            min-height: 760px;
-            padding: 24px 18px;
+            width: 1024px;
+            min-height: 768px;
+            padding: 20px 12px;
             background: #ffffff;
         }}
         .terminal {{
             margin: 0;
             white-space: pre-wrap;
-            font-size: 13px;
-            line-height: 1.24;
-            letter-spacing: -0.1px;
+            font-size: 10.5px;
+            line-height: 1.05;
+            letter-spacing: -0.25px;
         }}
         .terminal span {{
             display: block;
-            min-height: 1em;
         }}
         .logo {{
             color: var(--magenta);
-            font-size: 31px;
-            line-height: 0.78;
+            font-size: 30px;
+            line-height: 0.68;
             font-weight: 700;
-            letter-spacing: -1px;
+            letter-spacing: -1.4px;
         }}
         .tagline {{
             color: var(--magenta);
-            font-size: 13px;
-            line-height: 1.4;
+            font-size: 10.5px;
+            line-height: 1.05;
             font-weight: 700;
         }}
         .system {{ color: var(--blue); font-weight: 700; }}
@@ -166,4 +165,3 @@ def render_autogs_terminal_html() -> str:
 </body>
 </html>
 """
-
