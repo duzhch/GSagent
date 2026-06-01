@@ -24,6 +24,28 @@ def test_build_dataset_profile_extracts_headers_and_trait_presence(tmp_path) -> 
     assert profile.trait_column_present is True
 
 
+def test_build_dataset_profile_accepts_pheno_extension_as_tabular_phenotype(tmp_path) -> None:
+    phenotype_file = tmp_path / "LargeWhite_Mini.pheno"
+    phenotype_file.write_text("animal_id\tBackfat\tsex\nLW-2031\t12.1\tF\n", encoding="utf-8")
+
+    genotype_file = tmp_path / "LargeWhite_Mini.vcf"
+    genotype_file.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    payload = JobSubmissionRequest(
+        user_message="Perform Genomic Selection analysis on LargeWhite_Mini focusing on Backfat",
+        trait_name="Backfat",
+        phenotype_path=str(phenotype_file),
+        genotype_path=str(genotype_file),
+    )
+
+    profile = build_dataset_profile(payload)
+
+    assert profile.phenotype_format == "pheno"
+    assert profile.phenotype_headers == ["animal_id", "Backfat", "sex"]
+    assert profile.trait_column_present is True
+    assert "phenotype_format_unsupported" not in profile.validation_flags
+
+
 def test_build_dataset_profile_marks_missing_trait_column(tmp_path) -> None:
     phenotype_file = tmp_path / "pheno.csv"
     phenotype_file.write_text("animal_id,sex\nA1,M\n", encoding="utf-8")

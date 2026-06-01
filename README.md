@@ -69,6 +69,7 @@ Current MVP includes:
 - structured execution diagnostics (`execution_error`, `execution_error_detail`) and timeline events (`events`)
 - Slurm-aware execution policy for login nodes (auto route to `sbatch` submission)
 - optional async queue mode plus worker control plane (`/worker/health`, `/worker/process-once`)
+- AutoGS-style autonomous CLI mode (`gsagent autogs "<task>"`) that routes a natural-language GS task through AI parsing, planner state generation, workflow execution, output parsing, and report export
 
 ## Native Packaging
 
@@ -151,6 +152,26 @@ Expected:
 
 - `preflight OK`
 - `llm-check passed`
+
+### Autonomous AutoGS-Style Run
+
+Use this when you want a single command that behaves like the AutoGS terminal demo: it reads a natural-language GS task, asks the configured LLM to route and parse it, builds the model/validation/trial plan, executes the fixed GS workflow, parses outputs, and prints candidate/report results.
+
+```bash
+gsagent autogs \
+  "Perform Genomic Selection analysis on LargeWhite_Mini focusing on Backfat" \
+  --workdir /path/to/project \
+  --trait-name Backfat \
+  --phenotype-path /path/to/data/LargeWhite_Mini.pheno \
+  --genotype-path /path/to/data/LargeWhite_Mini.vcf
+```
+
+Notes:
+
+- omit the quoted task to print the screenshot-only terminal demo
+- `.csv`, `.tsv`, `.txt`, and tabular `.pheno` phenotype files are accepted
+- VCF inputs run directly; BED triplets are converted with `plink2` before workflow execution
+- `ANIMAL_GS_AGENT_LLM_BASE_URL`, `ANIMAL_GS_AGENT_LLM_API_KEY`, and `ANIMAL_GS_AGENT_LLM_MODEL` must be configured for autonomous task parsing
 
 ### Start Service
 

@@ -65,8 +65,38 @@ def test_parser_exposes_autogs_screenshot_demo_subcommand() -> None:
     assert args.command == "autogs"
 
 
+def test_parser_accepts_autogs_autonomous_run_message() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "autogs",
+            "Perform Genomic Selection analysis on LargeWhite_Mini focusing on Backfat",
+            "--trait-name",
+            "Backfat",
+            "--phenotype-path",
+            "data/LargeWhite_Mini.pheno",
+            "--genotype-path",
+            "data/LargeWhite_Mini.vcf",
+        ]
+    )
+
+    assert args.command == "autogs"
+    assert args.message.startswith("Perform Genomic Selection")
+    assert args.trait_name == "Backfat"
+    assert args.phenotype_path == "data/LargeWhite_Mini.pheno"
+    assert args.genotype_path == "data/LargeWhite_Mini.vcf"
+
+
 def test_autogs_command_prints_gs_terminal_demo(tmp_path: Path, capsys) -> None:
-    args = SimpleNamespace(workdir=str(tmp_path), env_file=".env", html_output=None)
+    args = SimpleNamespace(
+        workdir=str(tmp_path),
+        env_file=".env",
+        html_output=None,
+        message=None,
+        trait_name=None,
+        phenotype_path=None,
+        genotype_path=None,
+    )
 
     exit_code = cmd_autogs(args)
 
@@ -83,7 +113,15 @@ def test_autogs_command_prints_gs_terminal_demo(tmp_path: Path, capsys) -> None:
 
 def test_autogs_command_writes_html_output(tmp_path: Path) -> None:
     html_output = tmp_path / "autogs.html"
-    args = SimpleNamespace(workdir=str(tmp_path), env_file=".env", html_output=str(html_output))
+    args = SimpleNamespace(
+        workdir=str(tmp_path),
+        env_file=".env",
+        html_output=str(html_output),
+        message=None,
+        trait_name=None,
+        phenotype_path=None,
+        genotype_path=None,
+    )
 
     exit_code = cmd_autogs(args)
 
@@ -94,6 +132,134 @@ def test_autogs_command_writes_html_output(tmp_path: Path) -> None:
     assert "Genomic Selection" in html
     assert "LargeWhite_Mini" in html
     assert "GWAS" not in html
+
+
+def test_autogs_command_runs_autonomous_plan_and_workflow(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    pheno = tmp_path / "LargeWhite_Mini.csv"
+    geno = tmp_path / "LargeWhite_Mini.vcf"
+    pheno.write_text("animal_id,Backfat\nLW-2031,12.1\n", encoding="utf-8")
+    geno.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_API_KEY", "secret-key")
+    monkeypatch.setenv("ANIMAL_GS_AGENT_LLM_MODEL", "deepseek-chat")
+
+    calls = {"request_json": 0, "workflow_executor": 0}
+
+    def fake_request_json(self, system_prompt, user_prompt):
+        calls["request_json"] += 1
+        if "对话路由器" in system_prompt:
+            return {
+                "intent": "gs_task",
+                "reply": "",
+                "trait_name": "Backfat",
+                "phenotype_path": str(pheno),
+                "genotype_path": str(geno),
+            }
+        return {
+            "request_scope": "supported_gs",
+            "trait_name": "Backfat",
+            "user_goal": "rank candidates by GEBV",
+            "candidate_fixed_effects": ["sex", "batch"],
+            "population_description": "Large White pig population",
+            "missing_inputs": [],
+            "confidence": 0.94,
+            "clarification_needed": False,
+        }
+
+    class FakeCandidate:
+        individual_id = "LW-2031"
+        gebv = 1.4821
+        rank = 1
+
+    class FakeArtifact:
+        artifact_path = str(tmp_path / "runs" / "job-autogs" / "reports" / "gs_report.html")
+
+    class FakeReport:
+        report_text = "AI report: LW-2031 is the priority candidate."
+        top_candidates = [FakeCandidate()]
+        html_report_artifact = FakeArtifact()
+
+    def fake_executor(job):
+        calls["workflow_executor"] += 1
+        from animal_gs_agent.services.workflow_service import WorkflowExecutionResult
+
+        result_dir = tmp_path / "runs" / job.job_id
+        gblup_dir = result_dir / "gblup"
+        gblup_dir.mkdir(parents=True)
+        (gblup_dir / "gebv_predictions.csv").write_text(
+            "individual_id,gebv,gebv_rank\nLW-2031,1.4821,1\n",
+            encoding="utf-8",
+        )
+        (gblup_dir / "model_summary.txt").write_text(
+            "metric::pearson: 0.712\nmetric::rmse: 0.184\n",
+            encoding="utf-8",
+        )
+        return WorkflowExecutionResult(
+            backend="native_nextflow",
+            command=["nextflow", "run", "main.nf"],
+            result_dir=str(result_dir),
+            status="completed",
+        )
+
+    monkeypatch.setattr("animal_gs_agent.cli.OpenAICompatibleLLMClient.request_json", fake_request_json)
+    monkeypatch.setattr("animal_gs_agent.cli.execute_fixed_workflow", fake_executor)
+    monkeypatch.setattr("animal_gs_agent.cli.build_job_report", lambda job: FakeReport())
+
+    args = SimpleNamespace(
+        workdir=str(tmp_path),
+        env_file=".env",
+        html_output=None,
+        message="Perform Genomic Selection analysis on LargeWhite_Mini focusing on Backfat",
+        trait_name=None,
+        phenotype_path=None,
+        genotype_path=None,
+    )
+
+    exit_code = cmd_autogs(args)
+
+    assert exit_code == 0
+    assert calls["request_json"] == 2
+    assert calls["workflow_executor"] == 1
+    output = capsys.readouterr().out
+    assert "AutoGS (Agent): Processing request" in output
+    assert "[Planner] Intent identified: Genomic Selection" in output
+    assert "Candidate model pool: GBLUP" in output
+    assert "Selected model:" in output
+    assert "[Coder] Executing workflow" in output
+    assert "Analysis completed successfully" in output
+    assert "LW-2031" in output
+    assert "gs_report.html" in output
+
+
+def test_autogs_autonomous_run_requires_ai_configuration(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_API_KEY", raising=False)
+    monkeypatch.delenv("ANIMAL_GS_AGENT_LLM_MODEL", raising=False)
+
+    args = SimpleNamespace(
+        workdir=str(tmp_path),
+        env_file=".env",
+        html_output=None,
+        message="Perform Genomic Selection analysis on LargeWhite_Mini focusing on Backfat",
+        trait_name="Backfat",
+        phenotype_path="/tmp/LargeWhite_Mini.pheno",
+        genotype_path="/tmp/LargeWhite_Mini.vcf",
+    )
+
+    exit_code = cmd_autogs(args)
+
+    assert exit_code == 2
+    output = capsys.readouterr().out
+    assert "AI 未接入" in output
+    assert "workflow" not in output.lower()
 
 
 def test_required_command_missing_accepts_python3_fallback(monkeypatch) -> None:

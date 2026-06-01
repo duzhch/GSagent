@@ -409,7 +409,36 @@ gsagent chat --workdir /work/home/<user>/gsagent_project/workdir
 请对 BF 做基因组选择，表型文件是 /work/home/<user>/gsagent_project/data/pig5/BF_phenotype.csv，基因型文件是 /work/home/<user>/gsagent_project/data/pig5/2548bir.bed，输出候选个体。
 ```
 
-注意：chat 入口适合交互式演示和小规模测试；正式批量运行建议用 API，因为 API 更容易记录 job id、状态、报告和工件。
+## 11.1 用 AutoGS 风格入口自主规划并执行
+
+如果你希望像 AutoGS 终端演示一样，一条命令完成“理解任务 -> 规划 -> 执行 -> 输出候选个体和报告”，使用：
+
+```bash
+gsagent autogs \
+  "Perform Genomic Selection analysis on LargeWhite_Mini focusing on Backfat" \
+  --workdir /work/home/<user>/gsagent_project/workdir \
+  --trait-name Backfat \
+  --phenotype-path /work/home/<user>/gsagent_project/data/LargeWhite_Mini.pheno \
+  --genotype-path /work/home/<user>/gsagent_project/data/LargeWhite_Mini.vcf
+```
+
+这个入口会：
+
+- 调用已配置的大模型进行任务路由和 GS 任务解析
+- 构建数据检查、候选模型池、试验策略和验证协议
+- 执行固定 GS workflow
+- 解析 GEBV 候选个体结果
+- 输出 HTML 报告路径
+
+如果不传任务文本：
+
+```bash
+gsagent autogs --workdir /work/home/<user>/gsagent_project/workdir
+```
+
+则只打印截图用的 AutoGS 终端 demo，不会执行真实分析。
+
+注意：chat 入口适合交互式演示和小规模测试；`autogs` 入口适合单次自然语言任务的自主规划执行；正式批量运行建议用 API，因为 API 更容易记录 job id、状态、报告和工件。
 
 ## 12. Slurm 集群运行建议
 

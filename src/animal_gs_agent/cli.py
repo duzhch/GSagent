@@ -407,12 +407,121 @@ def cmd_llm_check(args: argparse.Namespace) -> int:
 
 def cmd_autogs(args: argparse.Namespace) -> int:
     _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
+    message = (getattr(args, "message", None) or "").strip()
+    if message:
+        return _run_autogs_autonomous_task(args=args, message=message)
+
     print(render_autogs_terminal_text())
     if args.html_output:
         html_path = Path(args.html_output).expanduser()
         html_path.parent.mkdir(parents=True, exist_ok=True)
         html_path.write_text(render_autogs_terminal_html(), encoding="utf-8")
         print(f"\n[gsagent] AutoGS screenshot HTML: {html_path}")
+    return 0
+
+
+def _plan_models_text(job) -> str:
+    if job.model_pool_plan is None:
+        return "none"
+    return ", ".join(job.model_pool_plan.available_models) or "none"
+
+
+def _selected_model_text(job) -> str:
+    if job.trial_strategy_plan is None:
+        return "not selected"
+    return job.trial_strategy_plan.selected_model or "not selected"
+
+
+def _validation_protocol_text(job) -> str:
+    if job.validation_protocol_plan is None:
+        return "none"
+    return ", ".join(protocol.scenario_id for protocol in job.validation_protocol_plan.protocols) or "none"
+
+
+def _print_autogs_completion(completed, report) -> None:
+    print("")
+    print("AutoGS (Agent): Analysis completed successfully!")
+    summary = completed.workflow_summary
+    if summary is not None:
+        pearson = summary.model_metrics.get("metric::pearson") or summary.model_metrics.get("accuracy::pearson") or "NA"
+        rmse = summary.model_metrics.get("metric::rmse") or summary.model_metrics.get("accuracy::rmse") or "NA"
+        print(f"    ✓ Model metrics: Pearson r={pearson}; RMSE={rmse}")
+    for candidate in report.top_candidates[:5]:
+        print(f"    ✓ Candidate #{candidate.rank}: {candidate.individual_id} (GEBV={candidate.gebv:.4f})")
+    artifact = report.html_report_artifact
+    if artifact is not None:
+        print(f"    ✓ Interactive HTML Report: {artifact.artifact_path}")
+
+
+def _run_autogs_autonomous_task(*, args: argparse.Namespace, message: str) -> int:
+    settings = get_settings()
+    if not _has_llm_settings(settings.llm):
+        print("AutoGS (Agent): AI 未接入，无法自主理解和规划任务。")
+        return 2
+
+    print("AutoGS (Agent): Processing request...")
+    print("[Planner] Analyzing intent and retrieving knowledge...")
+    llm_client = OpenAICompatibleLLMClient(settings.llm)
+    try:
+        route = _route_chat_message(message, llm_client)
+        if route["intent"] != "gs_task":
+            reply = route["reply"] or "This is not a GS analysis task."
+            print(f"AutoGS (Agent): {reply}")
+            return 2
+        task_understanding = understand_task(message, llm_client=llm_client)
+    except Exception as exc:
+        print(f"AutoGS (Agent): AI planning failed: {exc}")
+        return 1
+
+    trait_name = args.trait_name or route["trait_name"] or task_understanding.trait_name
+    phenotype_path = args.phenotype_path or route["phenotype_path"]
+    genotype_path = args.genotype_path or route["genotype_path"]
+    if not trait_name or not phenotype_path or not genotype_path:
+        print("AutoGS (Agent): missing trait_name / phenotype_path / genotype_path; cannot execute.")
+        return 2
+
+    print("[Planner] Intent identified: Genomic Selection")
+    print(
+        "[Planner] Generated Plan: "
+        f"trait={trait_name}; phenotype={phenotype_path}; genotype={genotype_path}"
+    )
+    try:
+        payload = JobSubmissionRequest(
+            user_message=message,
+            trait_name=trait_name,
+            phenotype_path=phenotype_path,
+            genotype_path=genotype_path,
+        )
+        dataset_profile = build_dataset_profile(payload)
+        job = create_job(
+            payload,
+            task_understanding=task_understanding,
+            dataset_profile=dataset_profile,
+        )
+        print(f"[Planner] Candidate model pool: {_plan_models_text(job)}")
+        print(f"[Planner] Selected model: {_selected_model_text(job)}")
+        print(f"[Planner] Validation protocol: {_validation_protocol_text(job)}")
+        print("[Coder] Generating workflow execution plan...")
+        print("[Coder] Executing workflow...")
+        completed = run_job(
+            job.job_id,
+            workflow_executor=execute_fixed_workflow,
+            workflow_output_parser=parse_workflow_outputs,
+        )
+        if completed is None:
+            print("AutoGS (Agent): Analysis failed: job not found.")
+            return 1
+        if completed.status != "completed":
+            error = completed.execution_error or "not_completed"
+            detail = completed.execution_error_detail or ""
+            print(f"AutoGS (Agent): Analysis failed: {error} {detail}".strip())
+            return 1
+        report = build_job_report(completed)
+    except Exception as exc:
+        print(f"AutoGS (Agent): Analysis failed: {exc}")
+        return 1
+
+    _print_autogs_completion(completed, report)
     return 0
 
 
@@ -617,9 +726,13 @@ def build_parser() -> argparse.ArgumentParser:
     llm_check.set_defaults(func=cmd_llm_check)
 
     autogs = subparsers.add_parser("autogs", help="print screenshot-ready AutoGS GS terminal demo")
+    autogs.add_argument("message", nargs="?", default=None, help="natural-language GS task; omitted prints demo")
     autogs.add_argument("--workdir", default=".", help="working directory with .env and runtime files")
     autogs.add_argument("--env-file", default=".env", help="env file name in workdir")
     autogs.add_argument("--html-output", default=None, help="optional path to write the AutoGS screenshot HTML")
+    autogs.add_argument("--trait-name", default=None, help="trait name override")
+    autogs.add_argument("--phenotype-path", default=None, help="phenotype file path override")
+    autogs.add_argument("--genotype-path", default=None, help="genotype file path override")
     autogs.set_defaults(func=cmd_autogs)
 
     chat = subparsers.add_parser("chat", help="wake the GS agent and run a natural-language GS task")

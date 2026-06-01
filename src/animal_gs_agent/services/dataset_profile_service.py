@@ -14,7 +14,7 @@ from animal_gs_agent.schemas.dataset_profile import (
 )
 from animal_gs_agent.schemas.jobs import JobSubmissionRequest
 
-SUPPORTED_PHENOTYPE_FORMATS = {"csv", "tsv", "txt"}
+SUPPORTED_PHENOTYPE_FORMATS = {"csv", "tsv", "txt", "pheno"}
 SUPPORTED_GENOTYPE_FORMATS = {"pgen", "bed", "vcf"}
 
 
