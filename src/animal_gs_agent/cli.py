@@ -18,6 +18,10 @@ from animal_gs_agent.agent.task_understanding import understand_task
 from animal_gs_agent.config import LLMSettings, get_settings
 from animal_gs_agent.llm.client import OpenAICompatibleLLMClient
 from animal_gs_agent.schemas.jobs import JobSubmissionRequest
+from animal_gs_agent.services.autogs_terminal_demo import (
+    render_autogs_terminal_html,
+    render_autogs_terminal_text,
+)
 from animal_gs_agent.services.dataset_profile_service import build_dataset_profile
 from animal_gs_agent.services.job_service import create_job, run_job
 from animal_gs_agent.services.report_service import build_job_report
@@ -401,6 +405,17 @@ def cmd_llm_check(args: argparse.Namespace) -> int:
     return 2
 
 
+def cmd_autogs(args: argparse.Namespace) -> int:
+    _prepare_runtime(workdir=args.workdir, env_file=args.env_file)
+    print(render_autogs_terminal_text())
+    if args.html_output:
+        html_path = Path(args.html_output).expanduser()
+        html_path.parent.mkdir(parents=True, exist_ok=True)
+        html_path.write_text(render_autogs_terminal_html(), encoding="utf-8")
+        print(f"\n[gsagent] AutoGS screenshot HTML: {html_path}")
+    return 0
+
+
 def _print_report_summary(report) -> None:
     print("\n[gsagent] AI report:")
     print(report.report_text)
@@ -600,6 +615,12 @@ def build_parser() -> argparse.ArgumentParser:
     llm_check.add_argument("--env-file", default=".env", help="env file name in workdir")
     llm_check.add_argument("--message", default=None, help="probe message for llm check")
     llm_check.set_defaults(func=cmd_llm_check)
+
+    autogs = subparsers.add_parser("autogs", help="print screenshot-ready AutoGS GS terminal demo")
+    autogs.add_argument("--workdir", default=".", help="working directory with .env and runtime files")
+    autogs.add_argument("--env-file", default=".env", help="env file name in workdir")
+    autogs.add_argument("--html-output", default=None, help="optional path to write the AutoGS screenshot HTML")
+    autogs.set_defaults(func=cmd_autogs)
 
     chat = subparsers.add_parser("chat", help="wake the GS agent and run a natural-language GS task")
     chat.add_argument("--workdir", default=".", help="working directory with .env and runtime files")

@@ -11,6 +11,7 @@ from animal_gs_agent.cli import (
     _required_command_missing,
     _resolve_workdir,
     build_parser,
+    cmd_autogs,
     cmd_chat,
     cmd_configure,
 )
@@ -53,9 +54,46 @@ def test_parser_contains_expected_subcommands() -> None:
     parser = build_parser()
     action = next(item for item in parser._actions if item.dest == "command")
     subcommands = set(action.choices.keys())
-    assert {"preflight", "serve", "worker", "print-env", "llm-check", "configure", "init", "chat", "run"}.issubset(
+    assert {"preflight", "serve", "worker", "print-env", "llm-check", "configure", "init", "chat", "run", "autogs"}.issubset(
         subcommands
     )
+
+
+def test_parser_exposes_autogs_screenshot_demo_subcommand() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["autogs"])
+    assert args.command == "autogs"
+
+
+def test_autogs_command_prints_gs_terminal_demo(tmp_path: Path, capsys) -> None:
+    args = SimpleNamespace(workdir=str(tmp_path), env_file=".env", html_output=None)
+
+    exit_code = cmd_autogs(args)
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "AutoGS" in output
+    assert "Breeding Intelligent Agent" in output
+    assert "Genomic Selection" in output
+    assert "LargeWhite_Mini" in output
+    assert "Backfat" in output
+    assert "GEBV" in output
+    assert "GWAS" not in output
+
+
+def test_autogs_command_writes_html_output(tmp_path: Path) -> None:
+    html_output = tmp_path / "autogs.html"
+    args = SimpleNamespace(workdir=str(tmp_path), env_file=".env", html_output=str(html_output))
+
+    exit_code = cmd_autogs(args)
+
+    assert exit_code == 0
+    assert html_output.exists()
+    html = html_output.read_text(encoding="utf-8")
+    assert "AutoGS" in html
+    assert "Genomic Selection" in html
+    assert "LargeWhite_Mini" in html
+    assert "GWAS" not in html
 
 
 def test_required_command_missing_accepts_python3_fallback(monkeypatch) -> None:
